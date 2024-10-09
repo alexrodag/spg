@@ -1,0 +1,34 @@
+set(BUILD_ELASTICPENDULUM TRUE)
+set(BUILD_ENERGYVIEWER FALSE)
+set(BUILD_SOLVERCOMPARE TRUE)
+
+set(ADD_POLYSCOPE FALSE)
+if(BUILD_ENERGYVIEWER OR BUILD_SOLVERCOMPARE)
+    set(ADD_POLYSCOPE TRUE)
+endif()
+
+if(BUILD_ELASTICPENDULUM)
+    project(elasticPendulum)
+    add_executable(${PROJECT_NAME})
+    target_sources(${PROJECT_NAME} PRIVATE elasticPendulum.cpp)
+    target_link_libraries(${PROJECT_NAME} PUBLIC OpenMP::OpenMP_CXX spg)
+endif()
+
+if(ADD_POLYSCOPE)
+    add_subdirectory(../external/polyscope/ ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/polyscope)
+    # TODO: Check how to avoid showing the compile warnings from polyscope
+endif()
+
+if(BUILD_ENERGYVIEWER)
+    project(energyViewer)
+    add_executable(${PROJECT_NAME})
+    target_sources(${PROJECT_NAME} PRIVATE energyViewer.cpp)
+    target_link_libraries(${PROJECT_NAME} PUBLIC polyscope OpenMP::OpenMP_CXX spg)
+endif()
+
+if(BUILD_SOLVERCOMPARE)
+    project(solverCompare)
+    add_executable(${PROJECT_NAME})
+    target_sources(${PROJECT_NAME} PRIVATE solverCompare.cpp)
+    target_link_libraries(${PROJECT_NAME} PUBLIC polyscope OpenMP::OpenMP_CXX spg)
+endif()
