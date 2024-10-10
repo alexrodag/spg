@@ -117,7 +117,7 @@ public:
     {
         // XPBD projection method. Constraints are solved in coupled fashion (ref: "Parallel Block Neo-Hookean XPBD
         // using Graph Clustering"). When TnConstraints == 1, it reduces to base XPBD formulation
-        constexpr Real smallEpsilon{1e-10};
+        constexpr Real smallEpsilon{static_cast<Real>(1e-10)};
         const auto [C, grad] = constraintsAndGradient(i, obj);
         VectorT<Real, TstencilSize * TnDOFs> W;
         for (int s = 0; s < TstencilSize; ++s) {
