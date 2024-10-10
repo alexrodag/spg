@@ -1,4 +1,4 @@
-#include <spg/sim/energy/stableNeohookeanEnergy.h>
+#include <spg/sim/energy/stableNeoHookeanEnergy.h>
 #include <spg/sim/simObject.h>
 #include <cmath>
 
