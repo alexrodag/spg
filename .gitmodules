@@ -7,3 +7,6 @@
 [submodule "external/tinyobjloader"]
 	path = external/tinyobjloader
 	url = https://github.com/tinyobjloader/tinyobjloader.git
+[submodule "external/TinyAD"]
+	path = external/TinyAD
+	url = https://github.com/patr-schm/TinyAD.git
