@@ -52,18 +52,46 @@ This is still a experimental project, which is the best excuse I can think of to
 
 I intend to explore several big features in the future, in no particular order (if you are interested in contributing, let me know):
 - Unified energy damping model
+- Proper boundary conditions
 - Collision detection
 - Rigid bodies
 - Differentiable simulation
 - GPU support
 
 ## Compilation and dependencies
-SPG uses [Eigen](https://eigen.tuxfamily.org/) and [TinyAD](https://github.com/patr-schm/TinyAD) as dependencies. The solver comparison executable example also uses [Polyscope](https://polyscope.run/) for GUI and rendering. All of these come as submodules.
+CMake is used to generate and compile the project. It has been tested in Windows 11 with VSCode and MSVC 19, and in Ubuntu 24.04. You can configure it in your preferred IDE. The `apps/` folder contains demo examples, including a small elastic pendulum simulation with the basics of setting up and simulating a scene, and a solver comparison demo that allows to set up different scenes and simulate them with multiple configurable solvers. 
 
-CMake is used to generate and compile the project. It has been tested in Windows 11 with VSCode and MSVC 19.
+SPG uses [Eigen](https://eigen.tuxfamily.org/) and [TinyAD](https://github.com/patr-schm/TinyAD) as dependencies. The solver comparison demo also uses [Polyscope](https://polyscope.run/) for GUI and rendering. All of these come as submodules.
 
-After cloning, you should run
-`git submodule update --init --recursive`
+For a quick Terminal compilation, you can run:
+
+#### Windows
+```
+git clone https://github.com/alexrodag/spg.git
+cd spg
+git submodule update --init --recursive
+mkdir build
+cd build
+cmake ..
+cmake --build . --config Release -j
+```
+
+#### Ubuntu
+
+```
+git clone https://github.com/alexrodag/spg.git
+cd spg
+git submodule update --init --recursive
+mkdir build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . -j
+```
+Note: In Ubuntu, if there is an error when building polyscope, you may need to run the following (check updated instructions in https://polyscope.run/building/)
+)
+```
+sudo apt install xorg-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev
+```
 
 ---
 
