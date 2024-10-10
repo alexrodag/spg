@@ -52,7 +52,7 @@ void ImplicitEulerBaraffWitkin::step()
     }
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {
-        std::cout << "Total step time: " << timer.getMilliseconds() << "ms\n\n";
+        std::cout << "  Total step time: " << timer.getMilliseconds() << "ms\n\n";
     }
 }
 }  // namespace spg::solver
