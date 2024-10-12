@@ -8,6 +8,11 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 find_package(OpenMP REQUIRED)
 
+if(NOT CMAKE_BUILD_TYPE)
+    message(STATUS "No build type specified, defaulting to Release")
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
 if (MSVC)
     add_definitions(/MP) # Parallel compilation
     # add_definitions(/W4) # Show level 4 warnings

@@ -63,9 +63,8 @@ CMake is used to generate and compile the project. It has been tested in Windows
 
 SPG uses [Eigen](https://eigen.tuxfamily.org/) and [TinyAD](https://github.com/patr-schm/TinyAD) as dependencies. The solver comparison demo also uses [Polyscope](https://polyscope.run/) for GUI and rendering. All of these come as submodules.
 
-For a quick Terminal compilation, you can run:
+For a quick Terminal compilation on both Windows or Ubuntu, you can run:
 
-#### Windows
 ```
 git clone https://github.com/alexrodag/spg.git
 cd spg
@@ -76,18 +75,7 @@ cmake ..
 cmake --build . --config Release -j
 ```
 
-#### Ubuntu
-
-```
-git clone https://github.com/alexrodag/spg.git
-cd spg
-git submodule update --init --recursive
-mkdir build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-cmake --build . -j
-```
-Note: In Ubuntu, if there is an error when building polyscope, you may need to run the following (check updated instructions in https://polyscope.run/building/)
+**Note**: In Ubuntu, if there is an error when configuring polyscope, you may need to run the following (check updated instructions in https://polyscope.run/building/)
 )
 ```
 sudo apt install xorg-dev libglu1-mesa-dev freeglut3-dev mesa-common-dev
