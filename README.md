@@ -6,7 +6,7 @@ SPG (short for Spring) is a research-focused C++ physics simulation library for 
 
 General nonlinear energies $E(x) = f(x)$ are supported. Energies of the particular form $E(x) = \frac{1}{2}C(x)^T K C(x)$, with $C(x)$ a vector of nonlinear constraint functions and $K$ a stiffness matrix, can also be defined by providing just the implementation of $C(x)$ and become automatically compatible with constraint-based solvers (e.g. XPBD) as well as energy-based and force-based solvers.
 
-Through the use of autodiff and templates (using [TinyAD](https://github.com/patr-schm/TinyAD) as autodiff backend), automatic first and second order derivatives are provided from a simple energy or constraint definition. This allows keep the code at a minimum, very close to the actual formulas of the corresponding solvers and models. It is also possible to override these automatic versions with more efficient custom implementations if needed.
+Through the use of autodiff and templates (using [TinyAD](https://github.com/patr-schm/TinyAD) as autodiff backend), automatic first and second order derivatives are provided from a simple energy or constraint definition. This helps to keep the code to a minimum, very close to the actual formulas of the corresponding solvers and models. It is also possible to override these automatic versions with more efficient custom implementations if needed.
 
 As an example, by providing the following constraint code for the [Discrete Bending Energy](https://media.disneyanimation.com/uploads/production/publication_asset/75/asset/WDAS_TR_201307.pdf), the corresponding constraint derivatives, energy, forces and force jacobians are automatically available, making it compatible with all the implemented solvers:
 
