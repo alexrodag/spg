@@ -12,10 +12,10 @@ public:
     const std::vector<Vector3> &anchors() const { return m_anchor; }
 
 protected:
-    virtual void dEnergy(int i, const SimObject &obj, DScalarFirstD &dE) const;
-    virtual void dEnergy(int i, const SimObject &obj, DScalarSecondD &dE) const;
-    virtual void dConstraints(int i, const SimObject &obj, DConstraintsFirstD &dC) const;
-    virtual void dConstraints(int i, const SimObject &obj, DConstraintsSecondD &dC) const;
+    virtual void dEnergy(int i, const SimObject &obj, RealAD1 &dE) const;
+    virtual void dEnergy(int i, const SimObject &obj, RealAD2 &dE) const;
+    virtual void dConstraints(int i, const SimObject &obj, ConstraintsAD1 &dC) const;
+    virtual void dConstraints(int i, const SimObject &obj, ConstraintsAD2 &dC) const;
     std::vector<Vector3> m_anchor;
 };
 }  // namespace spg

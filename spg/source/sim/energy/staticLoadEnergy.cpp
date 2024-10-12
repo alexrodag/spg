@@ -14,28 +14,28 @@ auto l_loadConstraint =
 
 auto l_loadEnergy = [](const StaticLoadEnergy *energy, const int i, const SimObject &obj, auto &dE) {
     const auto &x0{obj.positions()[energy->stencils()[i][0]]};
-    using ADouble = std::decay_t<decltype(dE)>;
-    const Vector3T<ADouble> x(ADouble(x0.x(), 0), ADouble(x0.y(), 1), ADouble(x0.z(), 2));
+    using RealT = std::decay_t<decltype(dE)>;
+    const Vector3T<RealT> x(RealT(x0.x(), 0), RealT(x0.y(), 1), RealT(x0.z(), 2));
     dE = energy->modelStiffness()[i][0] * -energy->loadDirections()[i].dot(x);
 };
 }  // namespace
 
-void StaticLoadEnergy::dEnergy(const int i, const SimObject &obj, DScalarFirstD &dC) const
+void StaticLoadEnergy::dEnergy(const int i, const SimObject &obj, RealAD1 &dC) const
 {
     l_loadEnergy(this, i, obj, dC);
 }
 
-void StaticLoadEnergy::dEnergy(const int i, const SimObject &obj, DScalarSecondD &dC) const
+void StaticLoadEnergy::dEnergy(const int i, const SimObject &obj, RealAD2 &dC) const
 {
     l_loadEnergy(this, i, obj, dC);
 }
 
-void StaticLoadEnergy::dConstraints(const int i, const SimObject &obj, DConstraintsFirstD &dC) const
+void StaticLoadEnergy::dConstraints(const int i, const SimObject &obj, ConstraintsAD1 &dC) const
 {
     l_loadConstraint(this, i, obj, dC);
 }
 
-void StaticLoadEnergy::dConstraints(const int i, const SimObject &obj, DConstraintsSecondD &dC) const
+void StaticLoadEnergy::dConstraints(const int i, const SimObject &obj, ConstraintsAD2 &dC) const
 {
     l_loadConstraint(this, i, obj, dC);
 }

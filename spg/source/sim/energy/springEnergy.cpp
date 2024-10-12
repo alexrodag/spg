@@ -26,9 +26,9 @@ inline Vector3 getDistanceCorrection(const Vector3 &p0,
 auto l_springConstraint = [](const SpringEnergy *energy, const int i, const SimObject &obj, auto &dC) {
     const auto &x0{obj.positions()[energy->stencils()[i][0]]};
     const auto &x1{obj.positions()[energy->stencils()[i][1]]};
-    using ADouble = std::decay_t<decltype(dC[0])>;
-    const Vector3T<ADouble> x(ADouble(x0.x(), 0), ADouble(x0.y(), 1), ADouble(x0.z(), 2));
-    const Vector3T<ADouble> y(ADouble(x1.x(), 3), ADouble(x1.y(), 4), ADouble(x1.z(), 5));
+    using RealT = std::decay_t<decltype(dC[0])>;
+    const Vector3T<RealT> x(RealT(x0.x(), 0), RealT(x0.y(), 1), RealT(x0.z(), 2));
+    const Vector3T<RealT> y(RealT(x1.x(), 3), RealT(x1.y(), 4), RealT(x1.z(), 5));
     const Real L0 = energy->restLengths()[i];
     dC[0] = (x - y).norm() - L0;
 };
@@ -36,9 +36,9 @@ auto l_springConstraint = [](const SpringEnergy *energy, const int i, const SimO
 auto l_springEnergy = [](const SpringEnergy *energy, const int i, const SimObject &obj, auto &dE) {
     const auto &x0{obj.positions()[energy->stencils()[i][0]]};
     const auto &x1{obj.positions()[energy->stencils()[i][1]]};
-    using ADouble = std::decay_t<decltype(dE)>;
-    const Vector3T<ADouble> x(ADouble(x0.x(), 0), ADouble(x0.y(), 1), ADouble(x0.z(), 2));
-    const Vector3T<ADouble> y(ADouble(x1.x(), 3), ADouble(x1.y(), 4), ADouble(x1.z(), 5));
+    using RealT = std::decay_t<decltype(dE)>;
+    const Vector3T<RealT> x(RealT(x0.x(), 0), RealT(x0.y(), 1), RealT(x0.z(), 2));
+    const Vector3T<RealT> y(RealT(x1.x(), 3), RealT(x1.y(), 4), RealT(x1.z(), 5));
     const Real k = energy->effectiveStiffness()[i][0];
     const Real L0 = energy->restLengths()[i];
     const auto diff = (x - y).norm() - L0;
@@ -55,8 +55,8 @@ void SpringEnergy::addStencil(const std::array<int, s_stencilSize> &stencil,
         throw std::runtime_error("Zero/negative rest length invalid");
     }
     m_restLength.push_back(restLength);
-    m_modelStiffness.push_back(StiffnessType{stiffness});
-    m_effectiveStiffness.push_back(StiffnessType{stiffness});
+    m_modelStiffness.push_back(StiffnessMat{stiffness});
+    m_effectiveStiffness.push_back(StiffnessMat{stiffness});
     m_modelCompliance.push_back(m_modelStiffness.back().inverse());
     m_effectiveCompliance.push_back(m_effectiveStiffness.back().inverse());
 }
@@ -83,22 +83,22 @@ void SpringEnergy::projectPosition(const int i, SimObject &obj, const Real dt) c
     x1 -= invMass1 * corr;
 }
 
-void SpringEnergy::dEnergy(const int i, const SimObject &obj, DScalarFirstD &dC) const
+void SpringEnergy::dEnergy(const int i, const SimObject &obj, RealAD1 &dC) const
 {
     l_springEnergy(this, i, obj, dC);
 }
 
-void SpringEnergy::dEnergy(const int i, const SimObject &obj, DScalarSecondD &dC) const
+void SpringEnergy::dEnergy(const int i, const SimObject &obj, RealAD2 &dC) const
 {
     l_springEnergy(this, i, obj, dC);
 }
 
-void SpringEnergy::dConstraints(const int i, const SimObject &obj, DConstraintsFirstD &dC) const
+void SpringEnergy::dConstraints(const int i, const SimObject &obj, ConstraintsAD1 &dC) const
 {
     l_springConstraint(this, i, obj, dC);
 }
 
-void SpringEnergy::dConstraints(const int i, const SimObject &obj, DConstraintsSecondD &dC) const
+void SpringEnergy::dConstraints(const int i, const SimObject &obj, ConstraintsAD2 &dC) const
 {
     l_springConstraint(this, i, obj, dC);
 }
@@ -114,14 +114,14 @@ Real SpringEnergy::energy(const int i, const SimObject &obj) const
     return 0.5 * k * LTerm * LTerm;
 }
 
-SpringEnergy::EnergyGradType SpringEnergy::energyGradient(const int i, const SimObject &obj) const
+SpringEnergy::EnergyGrad SpringEnergy::energyGradient(const int i, const SimObject &obj) const
 {
     const auto &x0{obj.positions()[m_stencils[i][0]]};
     const auto &x1{obj.positions()[m_stencils[i][1]]};
 
     const Real k = m_effectiveStiffness[i][0];
     const Real L0 = m_restLength[i];
-    SpringEnergy::EnergyGradType grad;
+    SpringEnergy::EnergyGrad grad;
     const Vector3 s = x0 - x1;
     const Real sNorm = s.norm();
     const Vector3 gradx0 = k * (sNorm - L0) * s / sNorm;
@@ -130,14 +130,14 @@ SpringEnergy::EnergyGradType SpringEnergy::energyGradient(const int i, const Sim
     return grad;
 }
 
-SpringEnergy::EnergyHessType SpringEnergy::energyHessian(const int i, const SimObject &obj) const
+SpringEnergy::EnergyHess SpringEnergy::energyHessian(const int i, const SimObject &obj) const
 {
     const auto &x0{obj.positions()[m_stencils[i][0]]};
     const auto &x1{obj.positions()[m_stencils[i][1]]};
 
     const Real k = m_effectiveStiffness[i][0];
     const Real L0 = m_restLength[i];
-    SpringEnergy::EnergyHessType hess;
+    SpringEnergy::EnergyHess hess;
     const Vector3 s = x0 - x1;
     const Real sNorm = s.norm();
     const Vector3 sNormalized = s / sNorm;

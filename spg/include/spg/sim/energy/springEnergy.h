@@ -17,13 +17,13 @@ protected:
     // Example of a manually implemented energy
     virtual Real energy(int i, const SimObject &obj) const;
     // Example of a manually implemented energy gradient
-    virtual EnergyGradType energyGradient(int i, const SimObject &obj) const;
+    virtual EnergyGrad energyGradient(int i, const SimObject &obj) const;
     // Example of a manually implemented energy hessian
-    virtual EnergyHessType energyHessian(int i, const SimObject &obj) const;
-    virtual void dEnergy(int i, const SimObject &obj, DScalarFirstD &dE) const;
-    virtual void dEnergy(int i, const SimObject &obj, DScalarSecondD &dE) const;
-    virtual void dConstraints(int i, const SimObject &obj, DConstraintsFirstD &dC) const;
-    virtual void dConstraints(int i, const SimObject &obj, DConstraintsSecondD &dC) const;
+    virtual EnergyHess energyHessian(int i, const SimObject &obj) const;
+    virtual void dEnergy(int i, const SimObject &obj, RealAD1 &dE) const;
+    virtual void dEnergy(int i, const SimObject &obj, RealAD2 &dE) const;
+    virtual void dConstraints(int i, const SimObject &obj, ConstraintsAD1 &dC) const;
+    virtual void dConstraints(int i, const SimObject &obj, ConstraintsAD2 &dC) const;
     std::vector<Real> m_restLength;
 };
 }  // namespace spg

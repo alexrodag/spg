@@ -11,15 +11,15 @@ auto l_choiConstraint = [](const MembraneChoiEnergy *energy, const int i, const 
     const auto &x1p{obj.positions()[energy->stencils()[i][1]]};
     const auto &x2p{obj.positions()[energy->stencils()[i][2]]};
 
-    using ADouble = std::decay_t<decltype(dC[0])>;
-    const Vector3T<ADouble> x0(ADouble(x0p.x(), 0), ADouble(x0p.y(), 1), ADouble(x0p.z(), 2));
-    const Vector3T<ADouble> x1(ADouble(x1p.x(), 3), ADouble(x1p.y(), 4), ADouble(x1p.z(), 5));
-    const Vector3T<ADouble> x2(ADouble(x2p.x(), 6), ADouble(x2p.y(), 7), ADouble(x2p.z(), 8));
+    using RealT = std::decay_t<decltype(dC[0])>;
+    const Vector3T<RealT> x0(RealT(x0p.x(), 0), RealT(x0p.y(), 1), RealT(x0p.z(), 2));
+    const Vector3T<RealT> x1(RealT(x1p.x(), 3), RealT(x1p.y(), 4), RealT(x1p.z(), 5));
+    const Vector3T<RealT> x2(RealT(x2p.x(), 6), RealT(x2p.y(), 7), RealT(x2p.z(), 8));
     // Compute deformation gradient
-    const Vector3T<ADouble> u = x1 - x0;
-    const Vector3T<ADouble> v = x2 - x0;
-    const MatrixT<ADouble, 3, 2> deformedMatrix{{u[0], v[0]}, {u[1], v[1]}, {u[2], v[2]}};
-    const MatrixT<ADouble, 3, 2> F = deformedMatrix * energy->inverseReferenceMats()[i];
+    const Vector3T<RealT> u = x1 - x0;
+    const Vector3T<RealT> v = x2 - x0;
+    const MatrixT<RealT, 3, 2> deformedMatrix{{u[0], v[0]}, {u[1], v[1]}, {u[2], v[2]}};
+    const MatrixT<RealT, 3, 2> F = deformedMatrix * energy->inverseReferenceMats()[i];
     const Real sqrtTwoInv = 1.0 / std::sqrt(2.0);
     dC = {F.col(0).norm() - 1,
           F.col(1).norm() - 1,
@@ -70,12 +70,12 @@ void MembraneChoiEnergy::preparePrecomputations(const SimObject &obj)
     StencilBlockEnergy<3, 4>::preparePrecomputations(obj);
 }
 
-void MembraneChoiEnergy::dConstraints(int i, const SimObject &obj, DConstraintsFirstD &dC) const
+void MembraneChoiEnergy::dConstraints(int i, const SimObject &obj, ConstraintsAD1 &dC) const
 {
     l_choiConstraint(this, i, obj, dC);
 }
 
-void MembraneChoiEnergy::dConstraints(int i, const SimObject &obj, DConstraintsSecondD &dC) const
+void MembraneChoiEnergy::dConstraints(int i, const SimObject &obj, ConstraintsAD2 &dC) const
 {
     l_choiConstraint(this, i, obj, dC);
 }

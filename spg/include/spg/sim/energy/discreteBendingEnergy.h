@@ -15,8 +15,8 @@ public:
     const std::vector<Real> &restThetas() const { return m_restTheta; }
 
 protected:
-    virtual void dConstraints(int i, const SimObject &obj, DConstraintsFirstD &dC) const;
-    virtual void dConstraints(int i, const SimObject &obj, DConstraintsSecondD &dC) const;
+    virtual void dConstraints(int i, const SimObject &obj, ConstraintsAD1 &dC) const;
+    virtual void dConstraints(int i, const SimObject &obj, ConstraintsAD2 &dC) const;
     std::vector<Real> m_restTheta;
 };
 

@@ -15,8 +15,8 @@ public:
     const std::vector<Matrix<3, 12>> &laplacians() const { return m_laplacians; }
 
 protected:
-    virtual void dConstraints(int i, const SimObject &obj, DConstraintsFirstD &dC) const;
-    virtual void dConstraints(int i, const SimObject &obj, DConstraintsSecondD &dC) const;
+    virtual void dConstraints(int i, const SimObject &obj, ConstraintsAD1 &dC) const;
+    virtual void dConstraints(int i, const SimObject &obj, ConstraintsAD2 &dC) const;
     std::vector<Matrix<3, 12>> m_laplacians;
     std::vector<Real> m_stiffnessFactor;
 };

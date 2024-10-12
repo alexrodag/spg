@@ -12,12 +12,12 @@ As an example, by providing the following constraint code for the [Discrete Bend
 
 ``` C++
     [...]
-    const Vector3T<ADouble> e0 = x1 - x0;
-    const Vector3T<ADouble> e3 = x2 - x1;
-    const Vector3T<ADouble> e4 = x3 - x1;
+    const Vector3T<RealT> e0 = x1 - x0;
+    const Vector3T<RealT> e3 = x2 - x1;
+    const Vector3T<RealT> e4 = x3 - x1;
 
-    const Vector3T<ADouble> n1 = e0.cross(e3).normalized();
-    const Vector3T<ADouble> n2 = -e0.cross(e4).normalized();
+    const Vector3T<RealT> n1 = e0.cross(e3).normalized();
+    const Vector3T<RealT> n2 = -e0.cross(e4).normalized();
 
     const auto theta = atan2((n1.cross(n2)).dot(e0.normalized()), n1.dot(n2));
     const auto constraint = theta - restTheta;

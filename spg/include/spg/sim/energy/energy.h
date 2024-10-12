@@ -77,22 +77,21 @@ class StencilBlockEnergy : public Energy
 {
 protected:
     // Static constexpr and type definitions to expose template parameters to subclasses
-    // TODO: Find more expressive names for the type definitions
     static constexpr int s_stencilSize{TstencilSize};
     static constexpr int s_DOFs{TnDOFs};
     // Autodiff scalar with first derivative computation
-    using DScalarFirstD = TinyAD::Scalar<TstencilSize * TnDOFs, Real, false>;
+    using RealAD1 = TinyAD::Scalar<TstencilSize * TnDOFs, Real, false>;
     // Autodiff scalar with first and second derivative computation
-    using DScalarSecondD = TinyAD::Scalar<TstencilSize * TnDOFs, Real, true>;
+    using RealAD2 = TinyAD::Scalar<TstencilSize * TnDOFs, Real, true>;
     // Autodiff vector of nCosntraints size with first derivative computation
-    using DConstraintsFirstD = VectorT<DScalarFirstD, TnConstraints>;
+    using ConstraintsAD1 = VectorT<RealAD1, TnConstraints>;
     // Autodiff vector of nCosntraints size with first and second derivative computation
-    using DConstraintsSecondD = VectorT<DScalarSecondD, TnConstraints>;
-    using ConstraintsType = VectorT<Real, TnConstraints>;
-    using ConstraintsGradType = MatrixT<Real, TstencilSize * TnDOFs, TnConstraints>;
-    using EnergyGradType = VectorT<Real, TstencilSize * TnDOFs>;
-    using EnergyHessType = MatrixT<Real, TstencilSize * TnDOFs, TstencilSize * TnDOFs>;
-    using StiffnessType = MatrixT<Real, TnConstraints, TnConstraints>;
+    using ConstraintsAD2 = VectorT<RealAD2, TnConstraints>;
+    using Constraints = VectorT<Real, TnConstraints>;
+    using ConstraintsGrad = MatrixT<Real, TstencilSize * TnDOFs, TnConstraints>;
+    using EnergyGrad = VectorT<Real, TstencilSize * TnDOFs>;
+    using EnergyHess = MatrixT<Real, TstencilSize * TnDOFs, TstencilSize * TnDOFs>;
+    using StiffnessMat = MatrixT<Real, TnConstraints, TnConstraints>;
 
 public:
     virtual int nStencils() const { return static_cast<int>(m_stencils.size()); }
@@ -108,10 +107,10 @@ public:
         return flattened;
     }
     const std::vector<std::array<int, TstencilSize>> &stencils() const { return m_stencils; }
-    const std::vector<StiffnessType> &effectiveStiffness() const { return m_effectiveStiffness; }
-    const std::vector<StiffnessType> &modelStiffness() const { return m_modelStiffness; }
-    const std::vector<StiffnessType> &effectiveCompliance() const { return m_effectiveCompliance; }
-    const std::vector<StiffnessType> &modelCompliance() const { return m_modelCompliance; }
+    const std::vector<StiffnessMat> &effectiveStiffness() const { return m_effectiveStiffness; }
+    const std::vector<StiffnessMat> &modelStiffness() const { return m_modelStiffness; }
+    const std::vector<StiffnessMat> &effectiveCompliance() const { return m_effectiveCompliance; }
+    const std::vector<StiffnessMat> &modelCompliance() const { return m_modelCompliance; }
 
     virtual void projectPosition(int i, SimObject &obj, Real dt) const
     {
@@ -126,13 +125,13 @@ public:
                 W(s * TnDOFs + m) = w;
             }
         }
-        const ConstraintsGradType WgradC = W.asDiagonal() * grad;
+        const ConstraintsGrad WgradC = W.asDiagonal() * grad;
         const auto A =
-            grad.transpose() * WgradC + m_effectiveCompliance[i] / (dt * dt) + smallEpsilon * StiffnessType::Identity();
+            grad.transpose() * WgradC + m_effectiveCompliance[i] / (dt * dt) + smallEpsilon * StiffnessMat::Identity();
         // Note: simplified numerator (ref: "Small Steps in Physics Simulation"). Doing a single iteration per step
         // allows to make this simplification but more importantly, maintains the accuracy of the solver, making it
         // converge to the real solution (see "XPBD: Position-Based Simulation of Compliant Constrained Dynamics")
-        const ConstraintsType deltaLambda = -A.inverse() * C;
+        const Constraints deltaLambda = -A.inverse() * C;
         const auto deltaX = (WgradC * deltaLambda).eval();
         for (int s = 0; s < TstencilSize; ++s) {
             obj.positions()[m_stencils[i][s]] += deltaX.template segment<TnDOFs>(s * TnDOFs);
@@ -149,7 +148,7 @@ public:
                 W(s * TnDOFs + m) = w;
             }
         }
-        const EnergyGradType deltaV = W.asDiagonal() * grad * -dt;
+        const EnergyGrad deltaV = W.asDiagonal() * grad * -dt;
         if (!atomicUpdate) {
             for (int s = 0; s < TstencilSize; ++s) {
                 obj.velocities()[m_stencils[i][s]] += deltaV.template segment<TnDOFs>(s * TnDOFs);
@@ -170,7 +169,7 @@ public:
                                   VectorX &forcesVector,
                                   bool atomicUpdate) const
     {
-        const EnergyGradType f = -energyGradient(i, obj);
+        const EnergyGrad f = -energyGradient(i, obj);
         const auto &stencil = m_stencils[i];
         if (!atomicUpdate) {
             for (int particleId = 0; particleId < TstencilSize; ++particleId) {
@@ -192,7 +191,7 @@ public:
                                                          int offsetDOF,
                                                          VectorX &hessianDiagonalVector) const
     {
-        const EnergyHessType h = -energyHessian(i, obj);
+        const EnergyHess h = -energyHessian(i, obj);
         const auto &stencil = m_stencils[i];
         for (int particleId = 0; particleId < TstencilSize; ++particleId) {
             for (int d = 0; d < TnDOFs; ++d) {
@@ -207,7 +206,7 @@ public:
     {
         std::vector<Triplet> triplets;
         triplets.reserve(TstencilSize * TnDOFs * TstencilSize * TnDOFs);
-        const EnergyHessType h = -energyHessian(i, obj);
+        const EnergyHess h = -energyHessian(i, obj);
         const auto &stencil = m_stencils[i];
         for (int rowStencil = 0; rowStencil < TstencilSize; ++rowStencil) {
             for (int colStencil = 0; colStencil < TstencilSize; ++colStencil) {
@@ -230,7 +229,7 @@ public:
                                        Vector3 &force) const
     {
         static_assert(TnDOFs == 3, "accumulateVertexForce called with DoFs different than 3");
-        const EnergyGradType f = -energyGradient(stencilIdx, obj);
+        const EnergyGrad f = -energyGradient(stencilIdx, obj);
         force += f.template segment<TnDOFs>(vertexIdxInStencil * TnDOFs);
     }
 
@@ -242,7 +241,7 @@ public:
                                          Matrix3 &hessian) const
     {
         static_assert(TnDOFs == 3, "accumulateVertexForce called with DoFs different than 3");
-        const EnergyHessType h = energyHessian(stencilIdx, obj);
+        const EnergyHess h = energyHessian(stencilIdx, obj);
         hessian += h.template block<TnDOFs, TnDOFs>(vertexIdxInStencil * TnDOFs, vertexIdxInStencil * TnDOFs);
     }
 
@@ -250,19 +249,19 @@ public:
     // efficient custom implementations. There are some examples in the implemented energies (e.g., SpringEnergy)
     virtual Real energy(int i, const SimObject &obj) const
     {
-        DScalarFirstD dE;
+        RealAD1 dE;
         dEnergy(i, obj, dE);
         return dE.val;
     }
-    virtual EnergyGradType energyGradient(int i, const SimObject &obj) const { return dEnergyGradient(i, obj); }
+    virtual EnergyGrad energyGradient(int i, const SimObject &obj) const { return dEnergyGradient(i, obj); }
 
-    virtual EnergyHessType energyHessian(int i, const SimObject &obj) const { return dEnergyHessian(i, obj); }
+    virtual EnergyHess energyHessian(int i, const SimObject &obj) const { return dEnergyHessian(i, obj); }
 
-    virtual ConstraintsType constraints(int i, const SimObject &obj) const
+    virtual Constraints constraints(int i, const SimObject &obj) const
     {
-        DConstraintsFirstD dC;
+        ConstraintsAD1 dC;
         dConstraints(i, obj, dC);
-        ConstraintsType C;
+        Constraints C;
         // TODO: Make this conversion faster.
         for (int j = 0; j < TnConstraints; ++j) {
             C[j] = dC[j].val;
@@ -270,12 +269,12 @@ public:
         return C;
     }
 
-    virtual ConstraintsGradType constraintsGradient(int i, const SimObject &obj) const
+    virtual ConstraintsGrad constraintsGradient(int i, const SimObject &obj) const
     {
         return std::get<1>(dConstraintsAndGradient(i, obj));
     }
 
-    virtual std::tuple<ConstraintsType, ConstraintsGradType> constraintsAndGradient(int i, SimObject &obj) const
+    virtual std::tuple<Constraints, ConstraintsGrad> constraintsAndGradient(int i, SimObject &obj) const
     {
         return dConstraintsAndGradient(i, obj);
     }
@@ -293,27 +292,26 @@ protected:
     // hiding the argument names to prevent the "unused variable" compile error
     virtual void dConstraints([[maybe_unused]] int i,
                               [[maybe_unused]] const SimObject &obj,
-                              [[maybe_unused]] DConstraintsFirstD &dC) const
+                              [[maybe_unused]] ConstraintsAD1 &dC) const
     {
         throw std::runtime_error("dConstraints not implemented for " + m_name + " energy.");
     }
     virtual void dConstraints([[maybe_unused]] int i,
                               [[maybe_unused]] const SimObject &obj,
-                              [[maybe_unused]] DConstraintsSecondD &dC) const
+                              [[maybe_unused]] ConstraintsAD2 &dC) const
     {
         throw std::runtime_error("dConstraints not implemented for " + m_name + " energy.");
     }
-    virtual std::tuple<ConstraintsType, ConstraintsGradType> dConstraintsAndGradient(int i,
-                                                                                     const SimObject &obj) const final
+    virtual std::tuple<Constraints, ConstraintsGrad> dConstraintsAndGradient(int i, const SimObject &obj) const final
     {
-        DConstraintsFirstD dC;
+        ConstraintsAD1 dC;
         dConstraints(i, obj, dC);
-        ConstraintsType C;
+        Constraints C;
         // TODO: Make this conversion faster.
         for (int j = 0; j < TnConstraints; ++j) {
             C[j] = dC[j].val;
         }
-        ConstraintsGradType gradC;
+        ConstraintsGrad gradC;
         // TODO: Make this conversion faster.
         for (int j = 0; j < TnConstraints; ++j) {
             gradC.col(j) = dC[j].grad;
@@ -323,27 +321,27 @@ protected:
 
     // dEnergy defaults to use the constraint-based approach. It can be overloaded to define a direct differentiable
     // version to be more efficient, or in cases where a constraint-based formulation is not available
-    virtual void dEnergy(int i, const SimObject &obj, DScalarFirstD &dE) const
+    virtual void dEnergy(int i, const SimObject &obj, RealAD1 &dE) const
     {
-        DConstraintsFirstD dC;
+        ConstraintsAD1 dC;
         dConstraints(i, obj, dC);
         dE = 0.5 * dC.dot(this->m_effectiveStiffness[i] * dC);
     }
-    virtual void dEnergy(int i, const SimObject &obj, DScalarSecondD &dE) const
+    virtual void dEnergy(int i, const SimObject &obj, RealAD2 &dE) const
     {
-        DConstraintsSecondD dC;
+        ConstraintsAD2 dC;
         dConstraints(i, obj, dC);
         dE = 0.5 * dC.dot(this->m_effectiveStiffness[i] * dC);
     }
-    virtual EnergyGradType dEnergyGradient(int i, const SimObject &obj) const final
+    virtual EnergyGrad dEnergyGradient(int i, const SimObject &obj) const final
     {
-        DScalarFirstD dE;
+        RealAD1 dE;
         dEnergy(i, obj, dE);
         return dE.grad;
     }
-    virtual EnergyHessType dEnergyHessian(int i, const SimObject &obj, bool projectPositiveDefinite = false) const final
+    virtual EnergyHess dEnergyHessian(int i, const SimObject &obj, bool projectPositiveDefinite = false) const final
     {
-        DScalarSecondD dE;
+        RealAD2 dE;
         dEnergy(i, obj, dE);
         if (projectPositiveDefinite) {
             TinyAD::project_positive_definite(dE.Hess, Real(TinyAD::default_hessian_projection_eps));
@@ -352,9 +350,9 @@ protected:
     }
 
     std::vector<std::array<int, TstencilSize>> m_stencils;
-    std::vector<StiffnessType> m_effectiveStiffness;   // Practical stiffness including integration along element
-    std::vector<StiffnessType> m_modelStiffness;       // Stiffness matrix of the energy, inverse of the base compliance
-    std::vector<StiffnessType> m_effectiveCompliance;  // Practical compliance including integration along element
-    std::vector<StiffnessType> m_modelCompliance;      // Base compliance, equivalent to the inverse of the stiffness
+    std::vector<StiffnessMat> m_effectiveStiffness;   // Practical stiffness including integration along element
+    std::vector<StiffnessMat> m_modelStiffness;       // Stiffness matrix of the energy, inverse of the base compliance
+    std::vector<StiffnessMat> m_effectiveCompliance;  // Practical compliance including integration along element
+    std::vector<StiffnessMat> m_modelCompliance;      // Base compliance, equivalent to the inverse of the stiffness
 };
 }  // namespace spg

@@ -17,10 +17,10 @@ public:
     const std::vector<Real> &hydrostaticCorrectionTerms() const { return m_hydrostaticCorrectionTerm; }
 
 protected:
-    virtual void dConstraints(int i, const SimObject &obj, DConstraintsFirstD &dC) const;
-    virtual void dConstraints(int i, const SimObject &obj, DConstraintsSecondD &dC) const;
-    virtual void dEnergy(int i, const SimObject &obj, DScalarFirstD &dC) const;
-    virtual void dEnergy(int i, const SimObject &obj, DScalarSecondD &dC) const;
+    virtual void dConstraints(int i, const SimObject &obj, ConstraintsAD1 &dC) const;
+    virtual void dConstraints(int i, const SimObject &obj, ConstraintsAD2 &dC) const;
+    virtual void dEnergy(int i, const SimObject &obj, RealAD1 &dC) const;
+    virtual void dEnergy(int i, const SimObject &obj, RealAD2 &dC) const;
     std::vector<Matrix3> m_inverseReferenceMat;
     std::vector<Real> m_hydrostaticCorrectionTerm;
 };

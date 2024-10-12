@@ -13,17 +13,17 @@ auto l_stableNeoHookeanConstraint =
         const auto &x2p{obj.positions()[energy->stencils()[i][2]]};
         const auto &x3p{obj.positions()[energy->stencils()[i][3]]};
 
-        using ADouble = std::decay_t<decltype(dC[0])>;
-        const Vector3T<ADouble> x0(ADouble(x0p.x(), 0), ADouble(x0p.y(), 1), ADouble(x0p.z(), 2));
-        const Vector3T<ADouble> x1(ADouble(x1p.x(), 3), ADouble(x1p.y(), 4), ADouble(x1p.z(), 5));
-        const Vector3T<ADouble> x2(ADouble(x2p.x(), 6), ADouble(x2p.y(), 7), ADouble(x2p.z(), 8));
-        const Vector3T<ADouble> x3(ADouble(x3p.x(), 9), ADouble(x3p.y(), 10), ADouble(x3p.z(), 11));
+        using RealT = std::decay_t<decltype(dC[0])>;
+        const Vector3T<RealT> x0(RealT(x0p.x(), 0), RealT(x0p.y(), 1), RealT(x0p.z(), 2));
+        const Vector3T<RealT> x1(RealT(x1p.x(), 3), RealT(x1p.y(), 4), RealT(x1p.z(), 5));
+        const Vector3T<RealT> x2(RealT(x2p.x(), 6), RealT(x2p.y(), 7), RealT(x2p.z(), 8));
+        const Vector3T<RealT> x3(RealT(x3p.x(), 9), RealT(x3p.y(), 10), RealT(x3p.z(), 11));
         // Compute deformation gradient
-        const Vector3T<ADouble> u = x1 - x0;
-        const Vector3T<ADouble> v = x2 - x0;
-        const Vector3T<ADouble> w = x3 - x0;
-        const Matrix3T<ADouble> deformedMatrix{{u[0], v[0], w[0]}, {u[1], v[1], w[1]}, {u[2], v[2], w[2]}};
-        const Matrix3T<ADouble> F = deformedMatrix * energy->inverseReferenceMats()[i];
+        const Vector3T<RealT> u = x1 - x0;
+        const Vector3T<RealT> v = x2 - x0;
+        const Vector3T<RealT> w = x3 - x0;
+        const Matrix3T<RealT> deformedMatrix{{u[0], v[0], w[0]}, {u[1], v[1], w[1]}, {u[2], v[2], w[2]}};
+        const Matrix3T<RealT> F = deformedMatrix * energy->inverseReferenceMats()[i];
         // Compute constraint terms
         const auto hydrostaticTerm = F.determinant() - energy->hydrostaticCorrectionTerms()[i];
         const auto deviatoricTerm = sqrt((F.transpose() * F).trace());
@@ -36,17 +36,17 @@ auto l_stableNeoHookeanEnergy = [](const StableNeoHookeanEnergy *energy, const i
     const auto &x2p{obj.positions()[energy->stencils()[i][2]]};
     const auto &x3p{obj.positions()[energy->stencils()[i][3]]};
 
-    using ADouble = std::decay_t<decltype(dE)>;
-    const Vector3T<ADouble> x0(ADouble(x0p.x(), 0), ADouble(x0p.y(), 1), ADouble(x0p.z(), 2));
-    const Vector3T<ADouble> x1(ADouble(x1p.x(), 3), ADouble(x1p.y(), 4), ADouble(x1p.z(), 5));
-    const Vector3T<ADouble> x2(ADouble(x2p.x(), 6), ADouble(x2p.y(), 7), ADouble(x2p.z(), 8));
-    const Vector3T<ADouble> x3(ADouble(x3p.x(), 9), ADouble(x3p.y(), 10), ADouble(x3p.z(), 11));
+    using RealT = std::decay_t<decltype(dE)>;
+    const Vector3T<RealT> x0(RealT(x0p.x(), 0), RealT(x0p.y(), 1), RealT(x0p.z(), 2));
+    const Vector3T<RealT> x1(RealT(x1p.x(), 3), RealT(x1p.y(), 4), RealT(x1p.z(), 5));
+    const Vector3T<RealT> x2(RealT(x2p.x(), 6), RealT(x2p.y(), 7), RealT(x2p.z(), 8));
+    const Vector3T<RealT> x3(RealT(x3p.x(), 9), RealT(x3p.y(), 10), RealT(x3p.z(), 11));
     // Compute deformation gradient
-    const Vector3T<ADouble> u = x1 - x0;
-    const Vector3T<ADouble> v = x2 - x0;
-    const Vector3T<ADouble> w = x3 - x0;
-    const Matrix3T<ADouble> deformedMatrix{{u[0], v[0], w[0]}, {u[1], v[1], w[1]}, {u[2], v[2], w[2]}};
-    const Matrix3T<ADouble> F = deformedMatrix * energy->inverseReferenceMats()[i];
+    const Vector3T<RealT> u = x1 - x0;
+    const Vector3T<RealT> v = x2 - x0;
+    const Vector3T<RealT> w = x3 - x0;
+    const Matrix3T<RealT> deformedMatrix{{u[0], v[0], w[0]}, {u[1], v[1], w[1]}, {u[2], v[2], w[2]}};
+    const Matrix3T<RealT> F = deformedMatrix * energy->inverseReferenceMats()[i];
     // Compute energy
     // Lambda and mu come pre-multiplied by the volume
     // Note: This implementation could be removed, as the automatic constraint-based energy computation based on the
@@ -105,22 +105,22 @@ void StableNeoHookeanEnergy::preparePrecomputations(const SimObject &obj)
     StencilBlockEnergy<4, 2>::preparePrecomputations(obj);
 }
 
-void StableNeoHookeanEnergy::dConstraints(int i, const SimObject &obj, DConstraintsFirstD &dC) const
+void StableNeoHookeanEnergy::dConstraints(int i, const SimObject &obj, ConstraintsAD1 &dC) const
 {
     l_stableNeoHookeanConstraint(this, i, obj, dC);
 }
 
-void StableNeoHookeanEnergy::dConstraints(int i, const SimObject &obj, DConstraintsSecondD &dC) const
+void StableNeoHookeanEnergy::dConstraints(int i, const SimObject &obj, ConstraintsAD2 &dC) const
 {
     l_stableNeoHookeanConstraint(this, i, obj, dC);
 }
 
-void StableNeoHookeanEnergy::dEnergy(int i, const SimObject &obj, DScalarFirstD &dE) const
+void StableNeoHookeanEnergy::dEnergy(int i, const SimObject &obj, RealAD1 &dE) const
 {
     l_stableNeoHookeanEnergy(this, i, obj, dE);
 }
 
-void StableNeoHookeanEnergy::dEnergy(int i, const SimObject &obj, DScalarSecondD &dE) const
+void StableNeoHookeanEnergy::dEnergy(int i, const SimObject &obj, RealAD2 &dE) const
 {
     l_stableNeoHookeanEnergy(this, i, obj, dE);
 }
