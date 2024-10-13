@@ -4,6 +4,8 @@
 
 namespace spg
 {
+// Classic spring energy
+// (ref: "https://en.wikipedia.org/wiki/Elastic_energy")
 class SpringEnergy : public StencilBlockEnergy<2>
 {
 public:

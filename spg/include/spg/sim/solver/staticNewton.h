@@ -8,6 +8,7 @@ namespace spg
 namespace solver
 {
 // Implicit static solver for the F = 0 problem
+// (Ref: https://crl.ethz.ch/teaching/shape-modeling-18/lectures/10_PhysicsDeformations.pdf)
 class StaticNewton : public ImplicitEulerBase
 {
 public:
