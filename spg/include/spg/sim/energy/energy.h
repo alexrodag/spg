@@ -12,10 +12,10 @@ namespace spg
 {
 class SimObject;
 
+// Base Energy class providing a common interface
 // TODO: Check if passing functors to some methods allow more flexibility in solver creation without having to add more
 // functions to Energy
 // TODO: Template the class to account for nDOFs
-
 // TODO: Decide if the const parameters in the virtual functions (int i, real dt, etc) should be const in the
 // declaration, since the definition is going to be also in this .h file and C++ suggests having equal signature for
 // overriden functions
@@ -79,6 +79,7 @@ protected:
     // Static constexpr and type definitions to expose template parameters to subclasses
     static constexpr int s_stencilSize{TstencilSize};
     static constexpr int s_DOFs{TnDOFs};
+
     // Autodiff scalar with first derivative computation
     using RealAD1 = TinyAD::Scalar<TstencilSize * TnDOFs, Real, false>;
     // Autodiff scalar with first and second derivative computation
@@ -87,6 +88,7 @@ protected:
     using ConstraintsAD1 = VectorT<RealAD1, TnConstraints>;
     // Autodiff vector of nCosntraints size with first and second derivative computation
     using ConstraintsAD2 = VectorT<RealAD2, TnConstraints>;
+
     using Constraints = VectorT<Real, TnConstraints>;
     using ConstraintsGrad = MatrixT<Real, TstencilSize * TnDOFs, TnConstraints>;
     using EnergyGrad = VectorT<Real, TstencilSize * TnDOFs>;
