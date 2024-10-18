@@ -65,9 +65,10 @@ void StableNeoHookeanEnergy::addStencil(const std::array<int, s_stencilSize> &st
                                         const Real poisson)
 {
     m_stencils.push_back(stencil);
-    // Note: Better conversion formulas should be derived as explained in sec 3.4 of Smith 2018
+    // Note: These formulas are derived from the correspondences mu = mu_lamé and lambda = mu_lamé + lambda_lamé as
+    // explained in sec 3.4 of Smith 2018
     const Real mu = young / (2 * (1 + poisson));
-    const Real lambda = -mu / (2 * poisson - 1);
+    const Real lambda = mu / (1 - 2 * poisson);
 
     const Matrix2 C{{lambda, 0}, {0, mu}};
     m_modelStiffness.emplace_back(C);

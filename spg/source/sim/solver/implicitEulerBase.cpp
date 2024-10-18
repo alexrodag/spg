@@ -116,6 +116,8 @@ void ImplicitEulerBase::getSystemForce(VectorX &f) const
 
 void ImplicitEulerBase::getSystemMassMatrix(SparseMatrix &M) const
 {
+    Timer timer;
+    timer.start();
     const int nObjects = static_cast<int>(m_simObjects.size());
     m_tripletHolder.clear();
     int accumulatedNDOF = 0;
@@ -134,6 +136,10 @@ void ImplicitEulerBase::getSystemMassMatrix(SparseMatrix &M) const
         accumulatedNDOF += object.nDOF();
     }
     M.setFromTriplets(m_tripletHolder.begin(), m_tripletHolder.end());
+    timer.stop();
+    if (m_verbosity == Verbosity::Performance) {
+        std::cout << "  M computation and assembly time: " << timer.getMilliseconds() << "ms\n";
+    }
 }
 
 void ImplicitEulerBase::getSystemStiffnessMatrix(SparseMatrix &K) const
@@ -180,6 +186,7 @@ void ImplicitEulerBase::getSystemStiffnessMatrix(SparseMatrix &K) const
 
 void ImplicitEulerBase::solveLinearSystem(const SparseMatrix &A, const VectorX &b, VectorX &x) const
 {
+    // Note: Under certain circumstances, some direct solver such as SimplicialLLT may be faster
     Timer timer;
     timer.start();
     Eigen::ConjugateGradient<SparseMatrix, Eigen::Lower | Eigen::Upper> cg;
