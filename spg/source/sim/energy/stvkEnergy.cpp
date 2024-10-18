@@ -68,8 +68,11 @@ auto l_stvkEnergy = [](const StvkEnergy *energy, const int i, const SimObject &o
 void StvkEnergy::addStencil(const std::array<int, s_stencilSize> &stencil, const Real young, const Real poisson)
 {
     m_stencils.push_back(stencil);
+    // Compute lamé parameters: https://en.wikipedia.org/wiki/Lam%C3%A9_parameters
     const Real mu = young / (2 * (1 + poisson));
-    const Real lambda = -mu / (2 * poisson - 1);
+    // Add epsilon to lambda just in case it becomes 0, to avoid division by 0 when computing the compliance
+    constexpr Real epsilon = 1e-20;
+    const Real lambda = young * poisson / ((1 + poisson) * (1 - 2 * poisson)) + epsilon;
 
     const Matrix2 C{{lambda, 0}, {0, mu}};
     m_modelStiffness.emplace_back(C);
