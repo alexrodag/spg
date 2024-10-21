@@ -1,5 +1,10 @@
 project(spg)
 
+# There is no real support for .obj or .msh meshes in any of the demos yet, so disable for now
+set(USE_TINYOBJLOADER FALSE)
+set(USE_MSHIO FALSE)
+
+
 add_library(${PROJECT_NAME})
 
 file(GLOB SRCF
@@ -23,12 +28,14 @@ include/spg/*.h
 add_subdirectory(../external/eigen/ ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/eigen)
 add_subdirectory(../external/TinyAD/ ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/TinyAD)
 
-# There is no real support for obj meshes yet, so disable for now
-set(USE_TINYOBJLOADER FALSE)
-
 if(USE_TINYOBJLOADER)
   add_subdirectory(../external/tinyobjloader/ ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/tinyobjloader)
   add_compile_definitions(TINYOBJLOADER_ACTIVE)
+endif()
+
+if(USE_MSHIO)
+  add_subdirectory(../external/MshIO/ ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/MshIO)
+  add_compile_definitions(MSHIO_ACTIVE)
 endif()
 
 target_include_directories(
@@ -48,5 +55,9 @@ target_sources(${PROJECT_NAME} PRIVATE ${SRCF} ${INCF})
 target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen OpenMP::OpenMP_CXX)
 
 if(USE_TINYOBJLOADER)
-target_link_libraries(${PROJECT_NAME} PUBLIC tinyobjloader)
+  target_link_libraries(${PROJECT_NAME} PUBLIC tinyobjloader)
+endif()
+
+if(USE_MSHIO)
+  target_link_libraries(${PROJECT_NAME} PUBLIC mshio::mshio)
 endif()

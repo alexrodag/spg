@@ -10,3 +10,6 @@
 [submodule "external/TinyAD"]
 	path = external/TinyAD
 	url = https://github.com/patr-schm/TinyAD.git
+[submodule "external/MshIO"]
+	path = external/MshIO
+	url = https://github.com/qnzhou/MshIO.git
