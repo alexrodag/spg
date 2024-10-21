@@ -63,7 +63,7 @@ CMake is used to generate and compile the project. It has been tested in Windows
 
 SPG uses [Eigen](https://eigen.tuxfamily.org/) and [TinyAD](https://github.com/patr-schm/TinyAD) as dependencies. The solver comparison demo also uses [Polyscope](https://polyscope.run/) for GUI and rendering. All of these come as submodules.
 
-For a quick Terminal compilation on both Windows or Ubuntu, you can run:
+For a quick Terminal compilation on both Windows and Ubuntu, run:
 
 ```
 git clone https://github.com/alexrodag/spg.git
