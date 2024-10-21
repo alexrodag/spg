@@ -38,6 +38,7 @@
 #include <spg/sim/solver/vbd.h>
 #include <spg/geom/triangleMesh.h>
 #include <spg/geom/tetrahedralMesh.h>
+#include <spg/geom/io/msh.h>
 
 ///////////////////////////////////////////////////////////
 // Simulation object creation methods and types for the GUI
@@ -315,6 +316,85 @@ spg::SimObject createTetrahedralBeam(const float mass,
     return obj;
 }
 
+spg::SimObject createTetrahedralObjectFromFile(std::string filePath,
+                                               const float mass,
+                                               const float young,
+                                               const float poisson,
+                                               FemType femType)
+{
+    spg::SimObject obj;
+    auto [verts, tets] = spg::io::loadMsh(filePath);
+    /* verts.resize(4);
+    verts[0] = {0, 0, 0};
+    verts[1] = {1, 0, 0};
+    verts[2] = {0, 1, 0};
+    verts[3] = {0, 0, 1};
+    tets.resize(1);
+    tets[0] = {0, 1, 2, 3}; */
+    spg::TetrahedralMesh tetMesh(verts, verts, tets);
+    const auto &vertices = tetMesh.vertices();
+    const auto &vertices0 = tetMesh.vertices0();
+    // Compute lumped particle masses
+    std::vector<spg::Real> particleVolumes(vertices.size(), 0);
+    spg::Real totalVolume = 0;
+    for (const auto &tet : tets) {
+        const spg::Vector3 x0{vertices0[tet[0]][0], vertices0[tet[0]][1], vertices0[tet[0]][2]};
+        const spg::Vector3 x1{vertices0[tet[1]][0], vertices0[tet[1]][1], vertices0[tet[1]][2]};
+        const spg::Vector3 x2{vertices0[tet[2]][0], vertices0[tet[2]][1], vertices0[tet[2]][2]};
+        const spg::Vector3 x3{vertices0[tet[3]][0], vertices0[tet[3]][1], vertices0[tet[3]][2]};
+        const auto tetVolume =
+            tetrahedralVolume(vertices0[tet[0]], vertices0[tet[1]], vertices0[tet[2]], vertices0[tet[3]]);
+        totalVolume += tetVolume;
+        particleVolumes[tet[0]] += tetVolume / 4.0;
+        particleVolumes[tet[1]] += tetVolume / 4.0;
+        particleVolumes[tet[2]] += tetVolume / 4.0;
+        particleVolumes[tet[3]] += tetVolume / 4.0;
+    }
+    const spg::Real density = mass / totalVolume;
+    for (int i = 0; i < vertices.size(); ++i) {
+        obj.addParticle(vertices[i], vertices0[i], particleVolumes[i] * density);
+    }
+    auto springAnchorEnergy = std::make_shared<spg::SpringAnchorEnergy>();
+    std::shared_ptr<spg::Energy> tetEnergy;
+    std::shared_ptr<spg::Energy> tetEnergy2;
+    if (femType == FemType::NeoHookean) {
+        tetEnergy = std::make_shared<spg::StableNeoHookeanEnergy>();
+    } else if (femType == FemType::SquaredNeoHookean) {
+        tetEnergy = std::make_shared<spg::StableSquaredNeoHookeanEnergy>();
+    } else {
+        tetEnergy = std::make_shared<spg::StvkEnergy>();
+    }
+    const spg::Real springStiffness = 1e4;
+
+    Eigen::AlignedBox3d aabb;
+    for (const auto &vert : verts) {
+        aabb.extend(vert);
+    }
+    // Anchor some nodes
+    for (int i = 0; i < verts.size(); ++i) {
+        if (verts[i].y() > aabb.max().y() - aabb.sizes().y() * 0.1) {
+            springAnchorEnergy->addStencil(std::array<int, 1>{i}, obj.positions0()[i], springStiffness);
+        }
+    }
+
+    auto l_addStencils = [&tets, young, poisson, &obj](auto *tetEnergy) {
+        for (const auto &tetIds : tets) {
+            tetEnergy->addStencil(tetIds, young, poisson);
+        }
+    };
+    if (femType == FemType::NeoHookean) {
+        l_addStencils(dynamic_cast<spg::StableNeoHookeanEnergy *>(tetEnergy.get()));
+    } else if (femType == FemType::SquaredNeoHookean) {
+        l_addStencils(dynamic_cast<spg::StableSquaredNeoHookeanEnergy *>(tetEnergy.get()));
+    } else {
+        l_addStencils(dynamic_cast<spg::StvkEnergy *>(tetEnergy.get()));
+    }
+    obj.addEnergy(springAnchorEnergy);
+    obj.addEnergy(tetEnergy);
+    tetEnergy->preparePrecomputations(obj);
+    return obj;
+}
+
 spg::TriangleMesh buildTriangleSquareMesh(const float width,
                                           const float height,
                                           const int nvertexRows,
@@ -483,13 +563,7 @@ spg::SimObject createCloth(const float mass,
     return obj;
 }
 
-enum class SceneType {
-    Cloth,
-    Rope,
-    SpringBeam,
-    FemBeam,
-
-};
+enum class SceneType { Cloth, Rope, SpringBeam, FemBeam, FemFile };
 
 std::vector<spg::SimObject> createSceneObjects(SceneType sceneType,
                                                MembraneType membraneType,
@@ -526,6 +600,10 @@ std::vector<spg::SimObject> createSceneObjects(SceneType sceneType,
                                       1e4F,
                                       0.3F,
                                       femType)};
+    }
+    if (sceneType == SceneType::FemFile) {
+        return {createTetrahedralObjectFromFile(
+            "C:/Users/aleja/Downloads/10k_tetmesh/509312_tetmesh.msh", mass, 1e3, 0.0, femType)};
     }
     return {};
 }
@@ -616,12 +694,13 @@ int main()
         }
 
         // Scene selection stuff
-        const char *sceneTypeNames[] = {"Spring beam", "Cloth", "Rope", "Fem beam"};
+        const char *sceneTypeNames[] = {"Spring beam", "Cloth", "Rope", "Fem beam", "Fem file"};
         std::map<int, SceneType> sceneTypeMap;
         sceneTypeMap[0] = SceneType::SpringBeam;
         sceneTypeMap[1] = SceneType::Cloth;
         sceneTypeMap[2] = SceneType::Rope;
         sceneTypeMap[3] = SceneType::FemBeam;
+        sceneTypeMap[4] = SceneType::FemFile;
         int sceneId{0};
         SceneType sceneType = sceneTypeMap[sceneId];
 
