@@ -22,6 +22,7 @@
 #include <spg/sim/energy/membraneBaraffWitkinEnergy.h>
 #include <spg/sim/energy/membraneChoiEnergy.h>
 #include <spg/sim/energy/stableNeoHookeanEnergy.h>
+#include <spg/sim/energy/stableSquaredNeoHookeanEnergy.h>
 #include <spg/sim/energy/stvkEnergy.h>
 #include <spg/sim/solver/xpbd.h>
 #include <spg/sim/solver/simplecticEuler.h>
@@ -45,7 +46,7 @@
 enum class MembraneType { Stvk, BaraffWitkin, Choi };
 enum class BendingType { Discrete, Quadratic, BaraffWitkin };
 enum class SpringType { Normal, Continuum };
-enum class FemType { Stvk, NeoHookean };
+enum class FemType { Stvk, NeoHookean, SquaredNeoHookean };
 
 spg::SimObject createRope(const float mass, const float ropeLength, const int nParticles, SpringType springType)
 {
@@ -282,6 +283,8 @@ spg::SimObject createTetrahedralBeam(const float mass,
     std::shared_ptr<spg::Energy> tetEnergy;
     if (femType == FemType::NeoHookean) {
         tetEnergy = std::make_shared<spg::StableNeoHookeanEnergy>();
+    } else if (femType == FemType::SquaredNeoHookean) {
+        tetEnergy = std::make_shared<spg::StableSquaredNeoHookeanEnergy>();
     } else {
         tetEnergy = std::make_shared<spg::StvkEnergy>();
     }
@@ -301,6 +304,8 @@ spg::SimObject createTetrahedralBeam(const float mass,
     };
     if (femType == FemType::NeoHookean) {
         l_addStencils(dynamic_cast<spg::StableNeoHookeanEnergy *>(tetEnergy.get()));
+    } else if (femType == FemType::SquaredNeoHookean) {
+        l_addStencils(dynamic_cast<spg::StableSquaredNeoHookeanEnergy *>(tetEnergy.get()));
     } else {
         l_addStencils(dynamic_cast<spg::StvkEnergy *>(tetEnergy.get()));
     }
@@ -518,8 +523,8 @@ std::vector<spg::SimObject> createSceneObjects(SceneType sceneType,
                                       1 + 4 * resolutionMultiplier,
                                       1 + resolutionMultiplier,
                                       1 + resolutionMultiplier,
-                                      1e3,
-                                      0.0,
+                                      1e4F,
+                                      0.3F,
                                       femType)};
     }
     return {};
@@ -634,10 +639,11 @@ int main()
         std::map<int, SpringType> springTypeMap;
         springTypeMap[0] = SpringType::Normal;
         springTypeMap[1] = SpringType::Continuum;
-        const char *femTypeNames[] = {"StVK", "Neo Hookean"};
+        const char *femTypeNames[] = {"StVK", "Neo Hookean", "Squared Neo Hookean"};
         std::map<int, FemType> femTypeMap;
         femTypeMap[0] = FemType::Stvk;
         femTypeMap[1] = FemType::NeoHookean;
+        femTypeMap[2] = FemType::SquaredNeoHookean;
         const char *verbosityTypeNames[] = {"None", "Debug", "Performance"};
         std::map<int, spg::Verbosity> verbosityTypeMap;
         verbosityTypeMap[0] = spg::Verbosity::None;
@@ -750,6 +756,10 @@ int main()
                                        dynamic_cast<spg::StableNeoHookeanEnergy *>(energy.get());
                                    stableNeoHookeanEnergy != nullptr) {
                             l_registerVolumeMesh(stableNeoHookeanEnergy);
+                        } else if (auto StableSquaredNeoHookeanEnergy =
+                                       dynamic_cast<spg::StableSquaredNeoHookeanEnergy *>(energy.get());
+                                   StableSquaredNeoHookeanEnergy != nullptr) {
+                            l_registerVolumeMesh(StableSquaredNeoHookeanEnergy);
                         } else if (auto stvkEnergy = dynamic_cast<spg::StvkEnergy *>(energy.get());
                                    stvkEnergy != nullptr) {
                             l_registerVolumeMesh(stvkEnergy);
