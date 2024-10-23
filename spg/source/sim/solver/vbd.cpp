@@ -4,8 +4,11 @@
 #include <spg/utils/timer.h>
 #include <spg/utils/graphColoring.h>
 
+#include <tbb/parallel_for.h>
+
 #include <iostream>
 
+#define USE_TBB
 namespace spg::solver
 {
 void VBD::step()
@@ -124,10 +127,19 @@ void VBD::step()
                     const auto &vertexGroups = m_simObjectsVertexGroups[objId];
                     for (const auto &vertexGroup : vertexGroups) {
                         const int verticesInGroup = static_cast<int>(vertexGroup.size());
+#ifdef USE_TBB
+                        tbb::parallel_for(tbb::blocked_range<int>(0, verticesInGroup),
+                                          [&l_vertexDescent, &vertexGroup](const tbb::blocked_range<int> &r) {
+                                              for (int i = r.begin(); i != r.end(); ++i) {
+                                                  l_vertexDescent(vertexGroup[i]);
+                                              }
+                                          });
+#else
 #pragma omp parallel for
                         for (int v = 0; v < verticesInGroup; ++v) {
                             l_vertexDescent(vertexGroup[v]);
                         }
+#endif
                     }
                 } else {
                     // Run serial Gauss Seidel otherwise

@@ -2,8 +2,11 @@
 #include <spg/sim/energy/energy.h>
 #include <spg/sim/simObject.h>
 #include <spg/utils/timer.h>
+#include <tbb/tbb.h>
 
 #include <iostream>
+
+#define USE_TBB
 
 namespace spg::solver
 {
@@ -100,10 +103,19 @@ void ImplicitEulerBase::getSystemForce(VectorX &f) const
         for (const auto &energy : energies) {
             const auto nstencils = energy->nStencils();
             timer.start();
+#ifdef USE_TBB
+            tbb::parallel_for(tbb::blocked_range<int>(0, nstencils),
+                              [&energy, &object, &accumulatedNDOF, &f](const tbb::blocked_range<int> &r) {
+                                  for (int i = r.begin(); i != r.end(); ++i) {
+                                      energy->accumulateForces(i, object, accumulatedNDOF, f, true);
+                                  }
+                              });
+#else
 #pragma omp parallel for
             for (int i = 0; i < nstencils; ++i) {
                 energy->accumulateForces(i, object, accumulatedNDOF, f, true);
             }
+#endif
             timer.stop();
             accumulatedTime += timer.getMilliseconds();
         }
@@ -158,17 +170,32 @@ void ImplicitEulerBase::getSystemStiffnessMatrix(SparseMatrix &K) const
             const auto nstencils = energy->nStencils();
             std::vector<std::vector<Triplet>> perStencilTriplets(nstencils);
             timer.start();
+#ifdef USE_TBB
+            tbb::enumerable_thread_specific<std::vector<Triplet>> localTriplets;
+            tbb::parallel_for(tbb::blocked_range<int>(0, nstencils),
+                              [&energy, &object, &accumulatedNDOF, &localTriplets](const tbb::blocked_range<int> &r) {
+                                  for (int i = r.begin(); i != r.end(); ++i) {
+                                      energy->appendHessianTriplets(i, object, accumulatedNDOF, localTriplets.local());
+                                  }
+                              });
+#else
 #pragma omp parallel for
             for (int i = 0; i < nstencils; ++i) {
                 perStencilTriplets[i] = energy->negativeHessianTriplets(i, object, accumulatedNDOF);
             }
+#endif
             timer.stop();
             accumulatedTimeHComp += timer.getMilliseconds();
             timer.start();
+#ifdef USE_TBB
+            localTriplets.combine_each(
+                [this](const auto &x) { m_tripletHolder.insert(m_tripletHolder.end(), std::begin(x), std::end(x)); });
+#else
             for (int i = 0; i < nstencils; ++i) {
                 m_tripletHolder.insert(
                     m_tripletHolder.end(), perStencilTriplets[i].begin(), perStencilTriplets[i].end());
             }
+#endif
             timer.stop();
             accumulatedTimeHTriplets += timer.getMilliseconds();
         }

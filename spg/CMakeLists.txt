@@ -28,6 +28,11 @@ include/spg/*.h
 add_subdirectory(../external/eigen/ ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/eigen)
 add_subdirectory(../external/TinyAD/ ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/TinyAD)
 
+set(TBB_TEST OFF CACHE BOOL "Enable testing" FORCE)
+set(TBBMALLOC_BUILD OFF CACHE BOOL "Enable tbbmalloc build" FORCE)
+set(TBB_INSTALL OFF CACHE BOOL "Enable installation" FORCE)
+add_subdirectory(../external/oneTBB/ ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/oneTBB)
+
 if(USE_TINYOBJLOADER)
   add_subdirectory(../external/tinyobjloader/ ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/tinyobjloader)
   add_compile_definitions(TINYOBJLOADER_ACTIVE)
@@ -52,7 +57,7 @@ endif ()
 
 target_sources(${PROJECT_NAME} PRIVATE ${SRCF} ${INCF})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen OpenMP::OpenMP_CXX)
+target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen OpenMP::OpenMP_CXX TBB::tbb)
 
 if(USE_TINYOBJLOADER)
   target_link_libraries(${PROJECT_NAME} PUBLIC tinyobjloader)

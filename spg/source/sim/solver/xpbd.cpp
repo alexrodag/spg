@@ -4,7 +4,10 @@
 #include <spg/utils/timer.h>
 #include <spg/utils/graphColoring.h>
 
+#include <tbb/parallel_for.h>
+
 #include <iostream>
+#define USE_TBB
 
 namespace spg::solver
 {
@@ -61,10 +64,19 @@ void XPBD::step()
                     // ref "Vivace: a Practical Gauss-Seidel Method for Stable Soft Body Dynamics"
                     for (const auto &group : stencilGroupsIt->second) {
                         const int groupSize = static_cast<int>(group.size());
+#ifdef USE_TBB
+                        tbb::parallel_for(tbb::blocked_range<int>(0, groupSize),
+                                          [&energy, &group, &obj, &dt](const tbb::blocked_range<int> &r) {
+                                              for (int i = r.begin(); i != r.end(); ++i) {
+                                                  energy->projectPosition(group[i], obj, dt);
+                                              }
+                                          });
+#else
 #pragma omp parallel for
                         for (int i = 0; i < groupSize; ++i) {
                             energy->projectPosition(group[i], obj, dt);
                         }
+#endif
                     }
                 } else {
                     // Serial Gauss Seidel path otherwise

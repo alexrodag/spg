@@ -26,6 +26,10 @@ public:
     virtual void projectPosition(int i, SimObject &obj, Real dt) const = 0;
     virtual void updateExplicitVelocities(int i, SimObject &obj, Real dt, bool atomicUpdate) const = 0;
     virtual std::vector<Triplet> negativeHessianTriplets(int i, const SimObject &obj, int offsetDOF) const = 0;
+    virtual void appendHessianTriplets(int i,
+                                       const SimObject &obj,
+                                       int offsetDOF,
+                                       std::vector<Triplet> &triplets) const = 0;
     virtual void accumulateForces(int i,
                                   const SimObject &obj,
                                   int offsetDOF,
@@ -222,6 +226,23 @@ public:
             }
         }
         return triplets;
+    }
+
+    virtual void appendHessianTriplets(int i, const SimObject &obj, int offsetDOF, std::vector<Triplet> &triplets) const
+    {
+        const EnergyHess h = -energyHessian(i, obj);
+        const auto &stencil = m_stencils[i];
+        for (int rowStencil = 0; rowStencil < TstencilSize; ++rowStencil) {
+            for (int colStencil = 0; colStencil < TstencilSize; ++colStencil) {
+                for (int rowDOF = 0; rowDOF < TnDOFs; ++rowDOF) {
+                    for (int colDOF = 0; colDOF < TnDOFs; ++colDOF) {
+                        triplets.emplace_back(stencil[rowStencil] * TnDOFs + rowDOF + offsetDOF,
+                                              stencil[colStencil] * TnDOFs + colDOF + offsetDOF,
+                                              h(rowStencil * TnDOFs + rowDOF, colStencil * TnDOFs + colDOF));
+                    }
+                }
+            }
+        }
     }
 
     // TODO: Check if possible to do autodiff only on required vertex in a generic way

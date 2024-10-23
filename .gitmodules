@@ -13,3 +13,6 @@
 [submodule "external/MshIO"]
 	path = external/MshIO
 	url = https://github.com/qnzhou/MshIO.git
+[submodule "external/oneTBB"]
+	path = external/oneTBB
+	url = https://github.com/oneapi-src/oneTBB.git
