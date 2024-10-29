@@ -27,7 +27,7 @@ auto l_stvkConstraint = [](const StvkEnergy *energy, const int i, const SimObjec
     const Matrix3T<RealT> E = 0.5 * (F.transpose() * F - Matrix3::Identity());
     const auto hydrostaticTerm = E.trace();
     // add a 2* to compensate the 0.5* introduced by the constraint-based energy computation
-    const auto deviatoricTerm = sqrt(2 * (E.transpose() * E).trace());
+    const auto deviatoricTerm = sqrt(2 * (E * E).trace());
     dC = {hydrostaticTerm, deviatoricTerm};
     // Note: This constraint version has a numerical instability when the second term is zero, since the derivative of
     // the sqrt would lead to a division by zero. Interestingly, this limitation would not be present in the full

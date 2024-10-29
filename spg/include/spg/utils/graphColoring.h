@@ -7,7 +7,8 @@ namespace spg
 {
 namespace coloring
 {
-// Very simple graph class and graph coloring strategy
+// Very simple graph class and greedy graph coloring strategy
+// Ref: https://en.wikipedia.org/wiki/Greedy_coloring
 class Graph
 {
 public:
@@ -26,8 +27,10 @@ struct FlatStencils {
     int stencilSize;
 };
 
-// Color stencils by adjacency
+// Color stencils by adjacency through vertices
 std::vector<int> colorStencils(const FlatStencils &flatStencils);
+
+// Color vertices by adjacency through stencils
 std::vector<int> colorVertices(int numVertices, const std::vector<FlatStencils> &flatStencilsSet);
 }  // namespace coloring
 }  // namespace spg
