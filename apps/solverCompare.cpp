@@ -523,8 +523,8 @@ std::vector<spg::SimObject> createSceneObjects(SceneType sceneType,
                                       1 + 4 * resolutionMultiplier,
                                       1 + resolutionMultiplier,
                                       1 + resolutionMultiplier,
-                                      1e4F,
-                                      0.3F,
+                                      1e3F,
+                                      0.2F,
                                       femType)};
     }
     return {};
