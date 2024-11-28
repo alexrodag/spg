@@ -7,22 +7,6 @@ namespace
 {
 constexpr Real eps{static_cast<Real>(1.0e-6)};  // TODO decide if this should be moved somewhere else
 
-inline Vector3 getDistanceCorrection(const Vector3 &p0,
-                                     const Vector3 &p1,
-                                     const Real restLength,
-                                     const Real alphaTilde,
-                                     const Real wSum)
-{
-    Vector3 n{p1 - p0};
-    const Real d{n.norm()};
-    if (d < eps) {
-        return {0, 0, 0};
-    }
-    n = n / d;
-
-    return n * (d - restLength) / (wSum + alphaTilde);
-}
-
 auto l_springConstraint = [](const SpringEnergy *energy, const int i, const SimObject &obj, auto &dC) {
     const auto &x0{obj.positions()[energy->stencils()[i][0]]};
     const auto &x1{obj.positions()[energy->stencils()[i][1]]};
