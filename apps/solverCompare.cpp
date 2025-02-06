@@ -34,7 +34,6 @@
 #include <spg/sim/solver/quasiStaticNewton.h>
 #include <spg/sim/solver/quasiStaticNewtonRobust.h>
 #include <spg/sim/solver/staticNewton.h>
-#include <spg/sim/solver/pgd.h>
 #include <spg/sim/solver/vbd.h>
 #include <spg/geom/triangleMesh.h>
 #include <spg/geom/tetrahedralMesh.h>
@@ -813,8 +812,6 @@ int main()
                 } else if (solverType == typeIndex++) {
                     solver = std::make_shared<spg::solver::ImplicitEulerNewtonDv>();
                 } else if (solverType == typeIndex++) {
-                    solver = std::make_shared<spg::solver::PGD>();
-                } else if (solverType == typeIndex++) {
                     solver = std::make_shared<spg::solver::SimplecticEuler>();
                 } else if (solverType == typeIndex++) {
                     solver = std::make_shared<spg::solver::StaticNewton>();
@@ -911,7 +908,6 @@ int main()
                                              "Implicit Euler Newton robust",
                                              "Implicit Euler Newton on x",
                                              "Implicit Euler Newton on v",
-                                             "Preconditioned Gradient Descent",
                                              "Simplectic Euler",
                                              "Static Newton",
                                              "Quasi-static Newton robust",

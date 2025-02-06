@@ -31,10 +31,6 @@ public:
                                   int offsetDOF,
                                   VectorX &forcesVector,
                                   bool atomicUpdate) const = 0;
-    virtual void accumulateNegativeHessianDiagonalAtomic(int i,
-                                                         const SimObject &obj,
-                                                         int offsetDOF,
-                                                         VectorX &hessianDiagonalVector) const = 0;
     // TODO: Change to generic template accumulators when Energy is templatized
     virtual void accumulateVertexForce(int stencilIdx,
                                        int vertexIdxInStencil,
@@ -184,22 +180,6 @@ public:
 #pragma omp atomic
                     forcesVector(stencil[particleId] * TnDOFs + d + offsetDOF) += f(particleId * TnDOFs + d);
                 }
-            }
-        }
-    };
-
-    virtual void accumulateNegativeHessianDiagonalAtomic(int i,
-                                                         const SimObject &obj,
-                                                         int offsetDOF,
-                                                         VectorX &hessianDiagonalVector) const
-    {
-        const EnergyHess h = -energyHessian(i, obj);
-        const auto &stencil = m_stencils[i];
-        for (int particleId = 0; particleId < TstencilSize; ++particleId) {
-            for (int d = 0; d < TnDOFs; ++d) {
-                const auto index = particleId * TnDOFs + d;
-#pragma omp atomic
-                hessianDiagonalVector(stencil[particleId] * TnDOFs + d + offsetDOF) += h(index, index);
             }
         }
     };
