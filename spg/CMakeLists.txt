@@ -1,7 +1,7 @@
 project(spg)
 
 # There is no real support for .obj or .msh meshes in any of the demos yet, so disable for now
-set(USE_TINYOBJLOADER FALSE)
+set(USE_TINYOBJLOADER TRUE)
 set(USE_MSHIO FALSE)
 
 
