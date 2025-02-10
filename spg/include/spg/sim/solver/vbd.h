@@ -7,7 +7,6 @@
 namespace spg
 {
 class SimObject;
-class Energy;
 
 namespace solver
 {

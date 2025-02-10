@@ -27,7 +27,8 @@ void BDF2::step()
         // Store state backup
         VectorX x0(totalNDOF);
         VectorX v0(totalNDOF);
-        getSystemState(x0, v0);
+        getSystemPositions(x0);
+        getSystemVelocities(v0);
 
         // Init minus-one state if not initialized
         if (m_xMinusOne.size() != x0.size() || m_vMinusOne.size() != v0.size()) {
@@ -60,7 +61,8 @@ void BDF2::step()
         m_xMinusOne = x0;
         m_vMinusOne = v0;
 
-        setObjectsState(x, v);
+        setObjectsPositions(x);
+        setObjectsVelocities(v);
     }
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {

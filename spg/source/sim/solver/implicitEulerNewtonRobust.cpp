@@ -39,7 +39,8 @@ void ImplicitEulerNewtonRobust::step()
         // TODO Check if worth storing them as members
         VectorX x0(totalNDOF);
         VectorX v0(totalNDOF);
-        getSystemState(x0, v0);
+        getSystemPositions(x0);
+        getSystemVelocities(v0);
 
         int currentNewtonIterations = 0;
         // Set initial guess
@@ -72,7 +73,8 @@ void ImplicitEulerNewtonRobust::step()
                 // Update objects state
                 const VectorX v = vi + dv * alpha;
                 const VectorX x = x0 + v * dt;
-                setObjectsState(x, v);
+                setObjectsPositions(x);
+                setObjectsVelocities(v);
                 // compute new RHS
                 getSystemForce(f);
                 stepResidual = (dt * f - M * (v - v0) /*- dt * rayleightAlpha * M * v*/).norm();
@@ -100,7 +102,8 @@ void ImplicitEulerNewtonRobust::step()
             successfulStep = false;
         }
         if (!successfulStep) {
-            setObjectsState(x0, v0);
+            setObjectsPositions(x0);
+            setObjectsVelocities(v0);
             m_currentDt *= m_timeSplittingFactor;
             m_consecutiveSuccessfulSteps = 0;
             if (m_verbosity == Verbosity::Performance) {

@@ -21,13 +21,17 @@ void ImplicitEulerBaraffWitkin::step()
     for (const auto &object : m_simObjects) {
         accumulatedNDOF += object.nDOF();
     }
+    for (const auto &object : m_rigidBodyGroups) {
+        accumulatedNDOF += object.nDOF();
+    }
     const int totalNDOF{accumulatedNDOF};
 
     for (int s = 0; s < m_nsubsteps; ++s) {
         // Store state backup
         VectorX x0(totalNDOF);
         VectorX v0(totalNDOF);
-        getSystemState(x0, v0);
+        getSystemPositions(x0);
+        getSystemVelocities(v0);
 
         // Compute forces, mass matrix and stiffness matrix
         VectorX f(totalNDOF);
@@ -46,9 +50,11 @@ void ImplicitEulerBaraffWitkin::step()
         solveLinearSystem(LHS, RHS, dv);
 
         // Update objects state
-        const VectorX v = v0 + dv;
+        updateObjectsStateDv(dv, dt);
+        /* const VectorX v = v0 + dv;
         const VectorX x = x0 + v * dt;
-        setObjectsState(x, v);
+        setObjectsPositions(x);
+        setObjectsVelocities(v); */
     }
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {
