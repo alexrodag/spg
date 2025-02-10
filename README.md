@@ -30,7 +30,6 @@ As an example, by providing the following constraint code for the [Discrete Bend
 - [Baraff-Witkin Implicit Euler](https://www.cs.cmu.edu/~baraff/papers/sig98.pdf)
 - [Robust Newton Backward Euler](https://drive.google.com/file/d/1KbRVF7fk5AonJelIcivFruS2cG3ke-Oi/view)
 - [BDF2](https://www.tkim.graphics/DYNAMIC_DEFORMABLES/DynamicDeformables.pdf)
-- [Preconditioned Gradient Descent](https://wanghmin.github.io/publication/wang-2016-dme/Wang-2016-DME.pdf)
 - [Quasistatic equilibrium](https://pcs-sim.github.io/)
 - [Static equilibrium](https://crl.ethz.ch/teaching/shape-modeling-18/lectures/10_PhysicsDeformations.pdf)
 
