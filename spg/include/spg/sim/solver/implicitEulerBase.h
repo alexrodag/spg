@@ -12,10 +12,10 @@ class ImplicitEulerBase : public BaseSolver
 protected:
     void getSystemPositions(VectorX &pos) const;
     void getSystemVelocities(VectorX &vel) const;
-    void getSystemState(VectorX &pos, VectorX &vel) const;
     void setObjectsPositions(const VectorX &pos);
     void setObjectsVelocities(const VectorX &vel);
-    void setObjectsState(const VectorX &pos, const VectorX &vel);
+    void updateObjectsStateDv(const VectorX &dv, const Real dt);
+    void updateObjectsStateDx(const VectorX &dx, const Real dt);
     // TODO Evaluate if these methods can use copy elision to improve readability
     void getSystemForce(VectorX &f) const;
     void getSystemStiffnessMatrix(SparseMatrix &K) const;

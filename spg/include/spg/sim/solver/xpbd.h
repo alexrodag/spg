@@ -5,7 +5,9 @@
 #include <vector>
 namespace spg
 {
+template <class TSimObject>
 class Energy;
+class SimObject;
 
 namespace solver
 {
@@ -21,7 +23,8 @@ protected:
     void computeParallelStencilGroups();
 
     std::vector<std::vector<Vector3>> m_simObjectsOldPos;
-    std::unordered_map<Energy *, std::vector<std::vector<int>>> m_stencilGroupsPerEnergy;
+    // TODO: How could this be a more general container of all possible Energy specializations
+    std::unordered_map<Energy<SimObject> *, std::vector<std::vector<int>>> m_stencilGroupsPerEnergy;
     bool m_useParallelGaussSeidel;
     bool m_parallelGroupsDirty{true};
 };

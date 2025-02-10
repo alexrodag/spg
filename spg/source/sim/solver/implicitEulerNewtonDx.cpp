@@ -27,7 +27,8 @@ void ImplicitEulerNewtonDx::step()
         // Store state backup
         VectorX x0(totalNDOF);
         VectorX v0(totalNDOF);
-        getSystemState(x0, v0);
+        getSystemPositions(x0);
+        getSystemVelocities(v0);
 
         // Set initial guess
         const VectorX xi = x0 + dt * v0;
@@ -54,7 +55,8 @@ void ImplicitEulerNewtonDx::step()
         // Update objects state
         const VectorX x = xi + dx;
         const VectorX v = (x - x0) * invdt;
-        setObjectsState(x, v);
+        setObjectsPositions(x);
+        setObjectsVelocities(v);
     }
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {
