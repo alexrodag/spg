@@ -35,6 +35,9 @@ protected:
     virtual void dEnergy(int i, const RigidBodyGroup &obj, RealAD2 &dE) const;
     virtual void dConstraints(int i, const RigidBodyGroup &obj, ConstraintsAD1 &dC) const;
     virtual void dConstraints(int i, const RigidBodyGroup &obj, ConstraintsAD2 &dC) const;
+    virtual Real energy(int i, const RigidBodyGroup &obj) const;
+    virtual EnergyGrad energyGradient(int i, const RigidBodyGroup &obj) const;
+    virtual EnergyHess energyHessian(int i, const RigidBodyGroup &obj) const;
     std::vector<Vector3> m_anchor;
     std::vector<Vector3> m_localRBPoint;
 };
