@@ -11,7 +11,7 @@ spg::Matrix3 axisAngleToRotMatrix(const spg::Vector3 &theta)
 
 spg::Vector3 rotMatrixToAxisAngle(const spg::Matrix3 &R)
 {
-    Eigen::AngleAxis<spg::Real> axisAngleOrientation(R);
+    const Eigen::AngleAxis<spg::Real> axisAngleOrientation(R);
     return axisAngleOrientation.angle() != 0 ? (axisAngleOrientation.axis() / axisAngleOrientation.angle()).eval()
                                              : spg::Vector3::Zero();
 }
