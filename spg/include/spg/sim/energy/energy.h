@@ -31,7 +31,6 @@ public:
                                   int offsetDOF,
                                   VectorX &forcesVector,
                                   bool atomicUpdate) const = 0;
-    // TODO: Change to generic template accumulators when Energy is templatized
     virtual void accumulateVertexForce(int stencilIdx,
                                        int vertexIdxInStencil,
                                        const TSimObject &obj,
