@@ -19,10 +19,10 @@ void VBD::step()
     const Real invdt = 1. / dt;
     const Real invdtSquared = invdt * invdt;
     constexpr Real epsilon = 1e-10;
-    const int nObjects = static_cast<int>(m_simObjects.size());
-    m_simObjectsOldPos.resize(m_simObjects.size());
-    m_simObjectsInertialPositions.resize(m_simObjects.size());
-    m_simObjPrevStepVelocities.resize(m_simObjects.size());
+    const int nObjects = static_cast<int>(std::get<std::vector<SimObject>>(m_objects).size());
+    m_simObjectsOldPos.resize(nObjects);
+    m_simObjectsInertialPositions.resize(nObjects);
+    m_simObjPrevStepVelocities.resize(nObjects);
     if (m_verbosity == Verbosity::Performance) {
         std::cout << "VDB step\n";
     }
@@ -37,10 +37,10 @@ void VBD::step()
         // Compute predicted inertial pos and initial guess per vertex
         detailTimer.start();
         for (int objId = 0; objId < nObjects; ++objId) {
-            auto &object = m_simObjects[objId];
+            auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
             auto &positions = object.positions();
             const auto &velocities = object.velocities();
-            const int nVertices = object.nParticles();
+            const int nVertices = object.nElements();
             const Real dtdt = dt * dt;
             const Vector3 dtdtg = dtdt * m_gravity;
             m_simObjectsOldPos[objId] = positions;
@@ -87,11 +87,11 @@ void VBD::step()
         detailTimer.start();
         const int iterations = m_iterations;
         for (int iter = 0; iter < iterations; ++iter) {
-            for (int objId = 0; objId < m_simObjects.size(); ++objId) {
-                auto &obj = m_simObjects[objId];
+            for (int objId = 0; objId < std::get<std::vector<SimObject>>(m_objects).size(); ++objId) {
+                auto &obj = std::get<std::vector<SimObject>>(m_objects)[objId];
                 const auto &inertialPositions = m_simObjectsInertialPositions[objId];
                 auto &elementsPerVertex = m_simObjectsElementsPerVertex[objId];
-                const int nVertices = obj.nParticles();
+                const int nVertices = obj.nElements();
                 // Vertex descent function
                 auto l_vertexDescent =
                     [&obj, &inertialPositions, &elementsPerVertex, invdtSquared, epsilon](const int vIdx) {
@@ -143,11 +143,11 @@ void VBD::step()
         // Update velocities
         detailTimer.start();
         for (int objId = 0; objId < nObjects; ++objId) {
-            auto &object = m_simObjects[objId];
+            auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
             const auto &positions = object.positions();
             const auto &oldPositions = m_simObjectsOldPos[objId];
             auto &velocities = object.velocities();
-            const int nParticles = static_cast<int>(object.nParticles());
+            const int nParticles = static_cast<int>(object.nElements());
             for (int i = 0; i < nParticles; ++i) {
                 velocities[i] = (positions[i] - oldPositions[i]) * invdt;
             }
@@ -182,15 +182,15 @@ void VBD::computeParallelVertexGroups()
     Timer timer;
     timer.start();
     m_simObjectsVertexGroups.clear();
-    m_simObjectsVertexGroups.resize(m_simObjects.size());
-    for (int objId = 0; objId < m_simObjects.size(); ++objId) {
-        const auto &object = m_simObjects[objId];
+    m_simObjectsVertexGroups.resize(std::get<std::vector<SimObject>>(m_objects).size());
+    for (int objId = 0; objId < std::get<std::vector<SimObject>>(m_objects).size(); ++objId) {
+        const auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
         auto &vertexGroups = m_simObjectsVertexGroups[objId];
         std::vector<coloring::FlatStencils> flatStencilsSet;
         for (const auto &energy : object.energies()) {
             flatStencilsSet.push_back({energy->flatStencils(), energy->stencilSize()});
         }
-        auto vertexColors = coloring::colorVertices(object.nParticles(), flatStencilsSet);
+        auto vertexColors = coloring::colorVertices(object.nElements(), flatStencilsSet);
         for (int i = 0; i < vertexColors.size(); ++i) {
             vertexGroups.resize(std::max(vertexGroups.size(), static_cast<size_t>(vertexColors[i] + 1)));
             vertexGroups[vertexColors[i]].push_back(i);
@@ -204,10 +204,10 @@ void VBD::computeStencilInfoPerVertex()
 {
     Timer timer;
     timer.start();
-    m_simObjectsElementsPerVertex.resize(m_simObjects.size());
-    for (int objId = 0; objId < m_simObjects.size(); ++objId) {
-        const auto &obj = m_simObjects[objId];
-        const int nVertices = obj.nParticles();
+    m_simObjectsElementsPerVertex.resize(std::get<std::vector<SimObject>>(m_objects).size());
+    for (int objId = 0; objId < std::get<std::vector<SimObject>>(m_objects).size(); ++objId) {
+        const auto &obj = std::get<std::vector<SimObject>>(m_objects)[objId];
+        const int nVertices = obj.nElements();
         const auto &energies = obj.energies();
         const int nEnergies = static_cast<int>(energies.size());
         auto &elementsPerVertex = m_simObjectsElementsPerVertex[objId];

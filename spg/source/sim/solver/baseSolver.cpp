@@ -1,26 +1,29 @@
 #include <spg/sim/solver/baseSolver.h>
 #include <spg/sim/simObject.h>
+#include <spg/sim/rigidBodyGroup.h>
+#include <spg/utils/functionalUtilities.h>
 
 #include <iostream>
 
 namespace spg::solver
 {
-void BaseSolver::addSimObject(const SimObject &object)
+template <typename TObj>
+void BaseSolver::addObject(const TObj &object)
 {
-    m_simObjects.push_back(object);
-}
-void BaseSolver::addRigidBodyGroup(const RigidBodyGroup &rbGroup)
-{
-    m_rigidBodyGroups.push_back(rbGroup);
+    std::get<std::vector<TObj>>(m_objects).push_back(object);
 }
 
 void BaseSolver::reset()
 {
-    for (auto &obj : m_simObjects) {
-        obj.reset();
-    }
-    for (auto &rbg : m_rigidBodyGroups) {
-        rbg.reset();
-    }
+    apply_each(
+        [](auto &objs) {
+            for (auto &obj : objs) {
+                obj.reset();
+            }
+        },
+        m_objects);
 }
+
+template void BaseSolver::addObject(const SimObject &object);
+template void BaseSolver::addObject(const RigidBodyGroup &object);
 }  // namespace spg::solver

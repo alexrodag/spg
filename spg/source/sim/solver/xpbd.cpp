@@ -1,6 +1,7 @@
 #include <spg/sim/solver/xpbd.h>
 #include <spg/sim/energy/energy.h>
 #include <spg/sim/simObject.h>
+#include <spg/sim/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
 #include <spg/utils/graphColoring.h>
 
@@ -19,8 +20,8 @@ void XPBD::step()
         m_parallelGroupsDirty = false;
     }
     const Real dt = m_dtStep / m_nsubsteps;
-    const int nObjects = static_cast<int>(m_simObjects.size());
-    m_simObjectsOldPos.resize(m_simObjects.size());
+    const int nObjects = static_cast<int>(std::get<std::vector<SimObject>>(m_objects).size());
+    m_simObjectsOldPos.resize(nObjects);
     if (m_verbosity == Verbosity::Performance) {
         std::cout << "XPBD step\n";
     }
@@ -34,12 +35,12 @@ void XPBD::step()
         // Compute predicted inertial pos
         detailTimer.start();
         for (int objId = 0; objId < nObjects; ++objId) {
-            auto &object = m_simObjects[objId];
+            auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
             auto &positions = object.positions();
             m_simObjectsOldPos[objId] = positions;
             const auto &velocities = object.velocities();
             const auto &invMass = object.invMasses();
-            const int nParticles = static_cast<int>(object.nParticles());
+            const int nParticles = static_cast<int>(object.nElements());
             const Vector3 dtdtg = dt * dt * m_gravity;
             for (int i = 0; i < nParticles; ++i) {
                 if (invMass[i] != 0) {
@@ -52,7 +53,7 @@ void XPBD::step()
 
         // Project constraints positions
         detailTimer.start();
-        for (auto &obj : m_simObjects) {
+        for (auto &obj : std::get<std::vector<SimObject>>(m_objects)) {
             const auto &energies = obj.energies();
             for (const auto &energy : energies) {
                 if (auto stencilGroupsIt = m_stencilGroupsPerEnergy.find(energy.get());
@@ -81,11 +82,11 @@ void XPBD::step()
         // Update velocities
         detailTimer.start();
         for (int objId = 0; objId < nObjects; ++objId) {
-            auto &object = m_simObjects[objId];
+            auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
             const auto &positions = object.positions();
             const auto &oldPositions = m_simObjectsOldPos[objId];
             auto &velocities = object.velocities();
-            const int nParticles = static_cast<int>(object.nParticles());
+            const int nParticles = static_cast<int>(object.nElements());
             for (int i = 0; i < nParticles; ++i) {
                 velocities[i] = (positions[i] - oldPositions[i]) / dt;
             }
@@ -115,7 +116,7 @@ void XPBD::computeParallelStencilGroups()
     Timer timer;
     timer.start();
     m_stencilGroupsPerEnergy.clear();
-    for (auto &obj : m_simObjects) {
+    for (auto &obj : std::get<std::vector<SimObject>>(m_objects)) {
         const auto &energies = obj.energies();
         for (const auto &energy : energies) {
             const auto stencilColors = coloring::colorStencils({energy->flatStencils(), energy->stencilSize()});

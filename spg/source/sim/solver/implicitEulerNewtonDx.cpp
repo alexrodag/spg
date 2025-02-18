@@ -18,7 +18,7 @@ void ImplicitEulerNewtonDx::step()
     const Real dt = m_dtStep / m_nsubsteps;
     // Compute total DOFs
     int accumulatedNDOF = 0;
-    for (const auto &object : m_simObjects) {
+    for (const auto &object : std::get<std::vector<SimObject>>(m_objects)) {
         accumulatedNDOF += object.nDOF();
     }
     const int totalNDOF{accumulatedNDOF};

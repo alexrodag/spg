@@ -13,13 +13,13 @@ void SimplecticEuler::step()
         std::cout << "SimplecticEuler step\n";
     }
     const Real dt = m_dtStep / m_nsubsteps;
-    const int nObjects = static_cast<int>(m_simObjects.size());
+    const int nObjects = static_cast<int>(std::get<std::vector<SimObject>>(m_objects).size());
     Timer timer;
     timer.start();
     for (int s = 0; s < m_nsubsteps; ++s) {
         // Update velocities
         for (int objId = 0; objId < nObjects; ++objId) {
-            auto &object = m_simObjects[objId];
+            auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
             const auto &energies = object.energies();
             for (auto &energy : energies) {
                 const auto nstencils = energy->nStencils();
@@ -30,7 +30,7 @@ void SimplecticEuler::step()
             }
             const auto &invMass = object.invMasses();
             auto &velocities = object.velocities();
-            const int nParticles = static_cast<int>(object.nParticles());
+            const int nParticles = static_cast<int>(object.nElements());
             const Vector3 dtg = dt * m_gravity;
             for (int i = 0; i < nParticles; ++i) {
                 if (invMass[i] != 0) {
@@ -41,11 +41,11 @@ void SimplecticEuler::step()
 
         // Update positions
         for (int objId = 0; objId < nObjects; ++objId) {
-            auto &object = m_simObjects[objId];
+            auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
             auto &positions = object.positions();
             const auto &velocities = object.velocities();
             const auto &invMass = object.invMasses();
-            const int nParticles = static_cast<int>(object.nParticles());
+            const int nParticles = static_cast<int>(object.nElements());
             for (int i = 0; i < nParticles; ++i) {
                 if (invMass[i] != 0) {
                     positions[i] = positions[i] + dt * velocities[i];
