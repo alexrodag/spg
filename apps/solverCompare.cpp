@@ -888,7 +888,8 @@ int main()
                     solver = std::make_shared<spg::solver::QuasiStaticNewton>();
                 }
                 // TEMP HACK
-                if (dynamic_cast<spg::solver::ImplicitEulerBaraffWitkin *>(solver.get()) != nullptr) {
+                if (dynamic_cast<spg::solver::ImplicitEulerBaraffWitkin *>(solver.get()) != nullptr ||
+                    dynamic_cast<spg::solver::ImplicitEulerNewtonDv *>(solver.get()) != nullptr) {
                     spg::RigidBodyGroup rbGroup;
                     auto [vertices, faces] = spg::io::loadObj("./unit-cube.obj");
                     spg::Real width{1}, height{3}, depth{0.2}, mass{1};

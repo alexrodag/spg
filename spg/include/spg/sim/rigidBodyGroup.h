@@ -29,7 +29,7 @@ public:
     void getVelocities(VectorX &vel, int offsetIndex) const;
     void setPositions(const VectorX &pos, int offsetIndex);
     void setVelocities(const VectorX &vel, int offsetIndex);
-    void updateStateFromDv(const VectorX &dv, Real dt, int offsetIndex);
+    void integratePositions(Real dt);
     std::vector<Vector3> &omegas() { return m_omega; }
     const std::vector<Vector3> &omegas() const { return m_omega; }
     const std::vector<Real> &invMasses() const { return m_w; }

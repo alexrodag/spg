@@ -3,6 +3,7 @@
 #include <spg/sim/simObject.h>
 #include <spg/sim/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
+#include <spg/utils/functionalUtilities.h>
 
 #include <iostream>
 
@@ -19,9 +20,13 @@ void ImplicitEulerNewtonDv::step()
     const Real dt = m_dtStep / m_nsubsteps;
     // Compute total DOFs
     int accumulatedNDOF = 0;
-    for (const auto &object : std::get<std::vector<SimObject>>(m_objects)) {
-        accumulatedNDOF += object.nDOF();
-    }
+    apply_each(
+        [&accumulatedNDOF](const auto &objs) {
+            for (const auto &obj : objs) {
+                accumulatedNDOF += obj.nDOF();
+            }
+        },
+        m_objects);
     const int totalNDOF{accumulatedNDOF};
 
     for (int s = 0; s < m_nsubsteps; ++s) {
@@ -31,10 +36,10 @@ void ImplicitEulerNewtonDv::step()
         getSystemPositions(x0);
         getSystemVelocities(v0);
 
-        // Set initial guess
-        const VectorX xi = x0 + dt * v0;
-        const VectorX vi = v0;
-        setObjectsPositions(xi);
+        // Set initial guess as inertial position
+        integrateObjectsPositions(dt);
+        VectorX xi(totalNDOF);
+        getSystemPositions(xi);
 
         // Compute forces, mass matrix and stiffness matrix
         VectorX f(totalNDOF);
@@ -53,10 +58,9 @@ void ImplicitEulerNewtonDv::step()
         solveLinearSystem(LHS, RHS, dv);
 
         // Update objects state
-        const VectorX v = v0 + dv;
-        const VectorX x = x0 + v * dt;
-        setObjectsPositions(x);
-        setObjectsVelocities(v);
+        setObjectsPositions(x0);
+        setObjectsVelocities(v0 + dv);
+        integrateObjectsPositions(dt);
     }
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {

@@ -12,8 +12,7 @@ spg::Matrix3 axisAngleToRotMatrix(const spg::Vector3 &theta)
 spg::Vector3 rotMatrixToAxisAngle(const spg::Matrix3 &R)
 {
     const Eigen::AngleAxis<spg::Real> axisAngleOrientation(R);
-    return axisAngleOrientation.angle() != 0 ? (axisAngleOrientation.axis() / axisAngleOrientation.angle()).eval()
-                                             : spg::Vector3::Zero();
+    return axisAngleOrientation.axis() * axisAngleOrientation.angle();
 }
 }  // namespace
 
@@ -60,16 +59,13 @@ void RigidBodyGroup::setVelocities(const VectorX &vel, int offsetIndex)
     }
 }
 
-void RigidBodyGroup::updateStateFromDv(const VectorX &dv, const Real dt, const int offsetIndex)
+void RigidBodyGroup::integratePositions(Real dt)
 {
     const int nbodies = nElements();
     for (int bodyIdx = 0; bodyIdx < nbodies; ++bodyIdx) {
-        const int startOffset = bodyIdx * 6 + offsetIndex;
         // linear part
-        m_v[bodyIdx] += dv.segment<3>(startOffset);
         m_x[bodyIdx] += m_v[bodyIdx] * dt;
         // angular part
-        m_omega[bodyIdx] += dv.segment<3>(startOffset + 3);
         if (const auto omegaNorm = m_omega[bodyIdx].norm(); omegaNorm != 0) {
             // Incremental compositions of the rotation
             m_rotationMatrix[bodyIdx] =

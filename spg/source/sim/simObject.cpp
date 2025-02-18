@@ -40,12 +40,10 @@ void SimObject::setVelocities(const VectorX &vel, int offsetIndex)
     }
 }
 
-void SimObject::updateStateFromDv(const VectorX &dv, const Real dt, const int offsetIndex)
+void SimObject::integratePositions(Real dt)
 {
     const int nparticles = nElements();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
-        const int startOffset = particleIdx * 3 + offsetIndex;
-        m_v[particleIdx] += dv.segment<3>(startOffset);
         m_x[particleIdx] += m_v[particleIdx] * dt;
     }
 }
