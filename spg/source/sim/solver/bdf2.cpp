@@ -1,6 +1,7 @@
 #include <spg/sim/solver/bdf2.h>
 #include <spg/sim/energy/energy.h>
 #include <spg/sim/simObject.h>
+#include <spg/sim/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
 
 #include <iostream>
