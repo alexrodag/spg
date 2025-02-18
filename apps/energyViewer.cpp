@@ -219,16 +219,16 @@ int main(int argc, char **argv)
             const spg::VectorX grad = obj.energies().front()->energyGradientGeneric(0, obj);
             spg::MatrixX hess = obj.energies().front()->energyHessianGeneric(0, obj);
             spg::MatrixX forces;
-            forces.resize(obj.nParticles(), 3);
+            forces.resize(obj.nElements(), 3);
             for (int i = 0; i < forces.rows(); ++i) {
                 forces.row(i) = -grad.segment<3>(i * 3);
             }
-            for (int i = 0; i < obj.nParticles(); ++i) {
+            for (int i = 0; i < obj.nElements(); ++i) {
                 hess.block<3, 3>(i * 3, i * 3) += spg::Matrix3::Identity() * regularizerScale;
             }
             spg::VectorX hessianInverseTimesGrad = hess.inverse() * grad;
             spg::MatrixX hessianWeighedForces;
-            hessianWeighedForces.resize(obj.nParticles(), 3);
+            hessianWeighedForces.resize(obj.nElements(), 3);
             for (int i = 0; i < hessianWeighedForces.rows(); ++i) {
                 hessianWeighedForces.row(i) = -hessianInverseTimesGrad.segment<3>(i * 3);
             }

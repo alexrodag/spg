@@ -1,7 +1,9 @@
 #include <spg/sim/solver/implicitEulerBaraffWitkin.h>
 #include <spg/sim/energy/energy.h>
 #include <spg/sim/simObject.h>
+#include <spg/sim/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
+#include <spg/utils/functionalUtilities.h>
 
 #include <iostream>
 
@@ -18,12 +20,13 @@ void ImplicitEulerBaraffWitkin::step()
     const Real dt = m_dtStep / m_nsubsteps;
     // Compute total DOFs
     int accumulatedNDOF = 0;
-    for (const auto &object : m_simObjects) {
-        accumulatedNDOF += object.nDOF();
-    }
-    for (const auto &object : m_rigidBodyGroups) {
-        accumulatedNDOF += object.nDOF();
-    }
+    apply_each(
+        [&accumulatedNDOF](const auto &objs) {
+            for (const auto &obj : objs) {
+                accumulatedNDOF += obj.nDOF();
+            }
+        },
+        m_objects);
     const int totalNDOF{accumulatedNDOF};
 
     for (int s = 0; s < m_nsubsteps; ++s) {
@@ -50,11 +53,7 @@ void ImplicitEulerBaraffWitkin::step()
         solveLinearSystem(LHS, RHS, dv);
 
         // Update objects state
-        updateObjectsStateDv(dv, dt);
-        /* const VectorX v = v0 + dv;
-        const VectorX x = x0 + v * dt;
-        setObjectsPositions(x);
-        setObjectsVelocities(v); */
+        updateObjectsStateFromDv(dv, dt);
     }
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {
