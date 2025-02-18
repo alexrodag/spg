@@ -26,7 +26,7 @@ public:
     void getVelocities(VectorX &vel, int offsetIndex) const;
     void setPositions(const VectorX &pos, int offsetIndex);
     void setVelocities(const VectorX &vel, int offsetIndex);
-    void updateStateFromDv(const VectorX &dv, Real dt, int offsetIndex);
+    void integratePositions(Real dt);
     const std::vector<Real> &invMasses() const { return m_w; }
     const std::vector<Real> &masses() const { return m_m; }
     std::vector<std::shared_ptr<EnergyT>> &energies() { return m_energies; }

@@ -65,14 +65,12 @@ void ImplicitEulerBase::setObjectsVelocities(const VectorX &vel)
         m_objects);
 }
 
-void ImplicitEulerBase::updateObjectsStateFromDv(const VectorX &dv, const Real dt)
+void ImplicitEulerBase::integrateObjectsPositions(const Real dt)
 {
-    int accumulatedNDOF = 0;
     apply_each(
-        [&accumulatedNDOF, &dv, &dt](auto &objs) {
+        [&dt](auto &objs) {
             for (auto &obj : objs) {
-                obj.updateStateFromDv(dv, dt, accumulatedNDOF);
-                accumulatedNDOF += obj.nDOF();
+                obj.integratePositions(dt);
             }
         },
         m_objects);

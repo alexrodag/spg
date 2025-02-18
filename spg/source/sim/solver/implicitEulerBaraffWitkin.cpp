@@ -30,10 +30,8 @@ void ImplicitEulerBaraffWitkin::step()
     const int totalNDOF{accumulatedNDOF};
 
     for (int s = 0; s < m_nsubsteps; ++s) {
-        // Store state backup
-        VectorX x0(totalNDOF);
+        // Store state velocities
         VectorX v0(totalNDOF);
-        getSystemPositions(x0);
         getSystemVelocities(v0);
 
         // Compute forces, mass matrix and stiffness matrix
@@ -53,7 +51,8 @@ void ImplicitEulerBaraffWitkin::step()
         solveLinearSystem(LHS, RHS, dv);
 
         // Update objects state
-        updateObjectsStateFromDv(dv, dt);
+        setObjectsVelocities(v0 + dv);
+        integrateObjectsPositions(dt);
     }
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {
