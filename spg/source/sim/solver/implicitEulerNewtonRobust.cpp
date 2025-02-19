@@ -3,6 +3,7 @@
 #include <spg/sim/simObject.h>
 #include <spg/sim/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
+#include <spg/utils/functionalUtilities.h>
 
 #include <iostream>
 
@@ -20,9 +21,13 @@ void ImplicitEulerNewtonRobust::step()
 
     // Compute total DOFs
     int accumulatedNDOF = 0;
-    for (const auto &object : std::get<std::vector<SimObject>>(m_objects)) {
-        accumulatedNDOF += object.nDOF();
-    }
+    apply_each(
+        [&accumulatedNDOF](const auto &objs) {
+            for (const auto &obj : objs) {
+                accumulatedNDOF += obj.nDOF();
+            }
+        },
+        m_objects);
     const int totalNDOF{accumulatedNDOF};
 
     for (int s = 0; s < m_nsubsteps; ++s) {
@@ -44,10 +49,9 @@ void ImplicitEulerNewtonRobust::step()
         getSystemVelocities(v0);
 
         int currentNewtonIterations = 0;
-        // Set initial guess
-        VectorX xi = x0 + dt * v0;
+        // Set initial guess as inertial position
+        integrateObjectsPositions(dt);
         VectorX vi = v0;
-        setObjectsPositions(xi);
         do {
             // Compute forces, mass matrix and stiffness matrix
             VectorX f(totalNDOF);
@@ -73,9 +77,11 @@ void ImplicitEulerNewtonRobust::step()
             while (stepResidual >= initialResidual && lineSearchIteration < m_maxLineSearchIterations) {
                 // Update objects state
                 const VectorX v = vi + dv * alpha;
-                const VectorX x = x0 + v * dt;
-                setObjectsPositions(x);
                 setObjectsVelocities(v);
+                setObjectsPositions(x0);
+                integrateObjectsPositions(dt);
+                VectorX x(totalNDOF);
+                getSystemPositions(x);
                 // compute new RHS
                 getSystemForce(f);
                 stepResidual = (dt * f - M * (v - v0) /*- dt * rayleightAlpha * M * v*/).norm();
@@ -83,7 +89,6 @@ void ImplicitEulerNewtonRobust::step()
                           << ". Initial residual: " << initialResidual << "\n";*/
                 if (stepResidual < initialResidual) {
                     vi = v;
-                    xi = x;
                 }
                 alpha *= 0.5;
                 lineSearchIteration++;

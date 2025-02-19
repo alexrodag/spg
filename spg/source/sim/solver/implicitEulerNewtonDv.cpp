@@ -38,8 +38,6 @@ void ImplicitEulerNewtonDv::step()
 
         // Set initial guess as inertial position
         integrateObjectsPositions(dt);
-        VectorX xi(totalNDOF);
-        getSystemPositions(xi);
 
         // Compute forces, mass matrix and stiffness matrix
         VectorX f(totalNDOF);

@@ -14,9 +14,7 @@ protected:
     void getSystemVelocities(VectorX &vel) const;
     void setObjectsPositions(const VectorX &pos);
     void setObjectsVelocities(const VectorX &vel);
-    void updateObjectsStateFromDv(const VectorX &dv, const Real dt);
     void integrateObjectsPositions(const Real dt);
-    void updateObjectsStateDx(const VectorX &dx, const Real dt);
     // TODO Evaluate if these methods can use copy elision to improve readability
     void getSystemForce(VectorX &f) const;
     void getSystemStiffnessMatrix(SparseMatrix &K) const;
