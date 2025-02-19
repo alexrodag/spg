@@ -76,10 +76,6 @@ void ImplicitEulerBase::integrateObjectsPositions(const Real dt)
         m_objects);
 }
 
-void ImplicitEulerBase::updateObjectsStateDx(const VectorX &dx, const Real dt)
-{
-}
-
 void ImplicitEulerBase::getSystemForce(VectorX &f) const
 {
     int accumulatedNDOF = 0;
