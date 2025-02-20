@@ -890,7 +890,8 @@ int main()
                 // TEMP HACK
                 if (dynamic_cast<spg::solver::ImplicitEulerBaraffWitkin *>(solver.get()) != nullptr ||
                     dynamic_cast<spg::solver::ImplicitEulerNewtonDv *>(solver.get()) != nullptr ||
-                    dynamic_cast<spg::solver::ImplicitEulerNewtonRobust *>(solver.get()) != nullptr) {
+                    dynamic_cast<spg::solver::ImplicitEulerNewtonRobust *>(solver.get()) != nullptr ||
+                    dynamic_cast<spg::solver::ImplicitEulerNewtonDx *>(solver.get()) != nullptr) {
                     spg::RigidBodyGroup rbGroup;
                     auto [vertices, faces] = spg::io::loadObj("./unit-cube.obj");
                     spg::Real width{1}, height{3}, depth{0.2}, mass{1};
@@ -909,7 +910,7 @@ int main()
                     localInertia(1, 1) = 1.0 / 12.0 * mass * (width * width + depth * depth);
                     localInertia(2, 2) = 1.0 / 12.0 * mass * (width * width + height * height);
 
-                    rbGroup.addBody({0, 0, 0}, {0, 0, 0}, mass, {0, 0, 0.001}, {0, 0, 0.001}, localInertia, mesh);
+                    rbGroup.addBody({0, 0, 0}, {0, 0, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
                     rbGroup.omegas().back() = {1, 0.000001, 0.000001};
                     std::shared_ptr<spg::SpringAnchorRBEnergy> springEnergy =
                         std::make_shared<spg::SpringAnchorRBEnergy>();
