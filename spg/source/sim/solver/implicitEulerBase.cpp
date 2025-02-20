@@ -75,17 +75,15 @@ void ImplicitEulerBase::integrateObjectsPositions(const Real dt)
         },
         m_objects);
 }
-void ImplicitEulerBase::updateObjectPositionsAndIntegrateVelocities(const VectorX &pos, const Real invdt)
+
+void ImplicitEulerBase::IntegrateOBjectsPositionsFromDx(const VectorX &dx, const VectorX &oldPos, const Real invdt)
 {
     int accumulatedNDOF = 0;
     apply_each(
-        [&accumulatedNDOF, &pos, invdt](auto &objs) {
+        [&accumulatedNDOF, &dx, &oldPos, invdt](auto &objs) {
             for (auto &obj : objs) {
-                obj.updatePositionsAndIntegrateVelocities(pos, accumulatedNDOF, invdt);
+                obj.integratePositionsFromDx(dx, oldPos, accumulatedNDOF, invdt);
                 accumulatedNDOF += obj.nDOF();
-                if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
-                    obj.updateInertias();
-                }
             }
         },
         m_objects);

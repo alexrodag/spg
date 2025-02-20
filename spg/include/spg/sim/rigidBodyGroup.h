@@ -30,7 +30,7 @@ public:
     void setPositions(const VectorX &pos, int offsetIndex);
     void setVelocities(const VectorX &vel, int offsetIndex);
     void integratePositions(Real dt);
-    void updatePositionsAndIntegrateVelocities(const VectorX &pos, int offsetIndex, Real invdt);
+    void integratePositionsFromDx(const VectorX &dx, const VectorX &oldPos, int offsetIndex, Real invdt);
     std::vector<Vector3> &omegas() { return m_omega; }
     const std::vector<Vector3> &omegas() const { return m_omega; }
     const std::vector<Real> &invMasses() const { return m_w; }
