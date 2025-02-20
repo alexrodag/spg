@@ -36,17 +36,17 @@ void ImplicitEulerNewtonDx::step()
         getSystemPositions(x0);
         getSystemVelocities(v0);
 
+        // Compute mass matrix in initial state to prevent simulations with rigid bodies to explode
+        SparseMatrix M(totalNDOF, totalNDOF);
+        getSystemMassMatrix(M);
+
         // Set initial guess as inertial position
         integrateObjectsPositions(dt);
-        VectorX xi(totalNDOF);
-        getSystemPositions(xi);
 
         // Compute forces, mass matrix and stiffness matrix
         VectorX f(totalNDOF);
-        SparseMatrix M(totalNDOF, totalNDOF);
         SparseMatrix K(totalNDOF, totalNDOF);
         getSystemForce(f);
-        getSystemMassMatrix(M);
         getSystemStiffnessMatrix(K);
 
         // Create Linear problem left and right hand sides
@@ -59,8 +59,7 @@ void ImplicitEulerNewtonDx::step()
         solveLinearSystem(LHS, RHS, dx);
 
         // Update objects state
-        setObjectsPositions(x0);
-        updateObjectPositionsAndIntegrateVelocities(xi + dx, invdt);
+        IntegrateOBjectsPositionsFromDx(dx, x0, invdt);
     }
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {

@@ -58,7 +58,7 @@ void ImplicitEulerNewtonRobust::step()
             SparseMatrix M(totalNDOF, totalNDOF);
             SparseMatrix K(totalNDOF, totalNDOF);
             getSystemForce(f);
-            getSystemMassMatrix(M);
+            getSystemMassMatrix(M);  // TODO: Where to compute the M, since it is now variable?
             getSystemStiffnessMatrix(K);
             // const Real rayleightAlpha = 0;
             //  Create linear problem left and right hand sides

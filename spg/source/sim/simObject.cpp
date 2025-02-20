@@ -48,13 +48,13 @@ void SimObject::integratePositions(Real dt)
     }
 }
 
-void SimObject::updatePositionsAndIntegrateVelocities(const VectorX &pos, int offsetIndex, const Real invdt)
+void SimObject::integratePositionsFromDx(const VectorX &dx, const VectorX &oldPos, int offsetIndex, Real invdt)
 {
     const int nparticles = nElements();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
         const int startOffset = particleIdx * 3 + offsetIndex;
-        m_v[particleIdx] = (pos.segment<3>(startOffset) - m_x[particleIdx]) * invdt;
-        m_x[particleIdx] = pos.segment<3>(startOffset);
+        m_x[particleIdx] += dx.segment<3>(startOffset);
+        m_v[particleIdx] = (m_x[particleIdx] - oldPos.segment<3>(startOffset)) * invdt;
     }
 }
 

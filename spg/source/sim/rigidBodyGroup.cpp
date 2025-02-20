@@ -77,21 +77,27 @@ void RigidBodyGroup::integratePositions(Real dt)
     updateInertias();
 }
 
-void RigidBodyGroup::updatePositionsAndIntegrateVelocities(const VectorX &pos, int offsetIndex, const Real invdt)
+void RigidBodyGroup::integratePositionsFromDx(const VectorX &dx, const VectorX &oldPos, int offsetIndex, Real invdt)
 {
-    const int nparticles = nElements();
-    for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
-        const int startOffset = particleIdx * 6 + offsetIndex;
+    const int nbodies = nElements();
+    for (int bodyIdx = 0; bodyIdx < nbodies; ++bodyIdx) {
+        const int startOffset = bodyIdx * 3 + offsetIndex;
         // Linear part
-        m_v[particleIdx] = (pos.segment<3>(startOffset) - m_x[particleIdx]) * invdt;
-        m_x[particleIdx] = pos.segment<3>(startOffset);
+        m_x[bodyIdx] += dx.segment<3>(startOffset);
+        m_v[bodyIdx] = (m_x[bodyIdx] - oldPos.segment<3>(startOffset)) * invdt;
         // Angular part
-        const Matrix3 prevRotMat = m_rotationMatrix[particleIdx];
-        m_theta[particleIdx] = pos.segment<3>(startOffset + 3);
-        updateRotationMatrix(particleIdx);
-        Eigen::AngleAxis<spg::Real> deltaAxisAngle(m_rotationMatrix[particleIdx] * prevRotMat.transpose());
-        m_omega[particleIdx] = deltaAxisAngle.angle() * deltaAxisAngle.axis() * invdt;
+        // Incremental compositions of the rotation
+        if (const Real dxNorm = dx.segment<3>(startOffset + 3).norm(); dxNorm != 0) {
+            m_rotationMatrix[bodyIdx] =
+                Eigen::AngleAxis<spg::Real>(dxNorm, dx.segment<3>(startOffset + 3) / dxNorm).toRotationMatrix() *
+                m_rotationMatrix[bodyIdx];
+        }
+        Eigen::AngleAxis<spg::Real> deltaAxisAngle(
+            m_rotationMatrix[bodyIdx] * axisAngleToRotMatrix(oldPos.segment<3>(startOffset + 3)).transpose());
+        m_omega[bodyIdx] = deltaAxisAngle.angle() * deltaAxisAngle.axis() * invdt;
     }
+    updateThetas();
+    updateInertias();
 }
 
 void RigidBodyGroup::addBody(const Vector3 &p,
@@ -110,7 +116,7 @@ void RigidBodyGroup::addBody(const Vector3 &p,
     m_w.push_back(mass == 0 ? 0 : 1 / mass);
     m_theta.push_back(theta);
     m_thetaInitial.push_back(theta);
-    m_omega.push_back(Vector3::Zero());
+    m_omega.push_back({0.2, 1, 0.3});
     m_theta0.push_back(theta0);
     m_localInertia.push_back(localInertia);
     m_localInertiaInv.push_back(localInertia.inverse());
