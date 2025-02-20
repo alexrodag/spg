@@ -68,9 +68,24 @@ void ImplicitEulerBase::setObjectsVelocities(const VectorX &vel)
 void ImplicitEulerBase::integrateObjectsPositions(const Real dt)
 {
     apply_each(
-        [&dt](auto &objs) {
+        [dt](auto &objs) {
             for (auto &obj : objs) {
                 obj.integratePositions(dt);
+            }
+        },
+        m_objects);
+}
+void ImplicitEulerBase::updateObjectPositionsAndIntegrateVelocities(const VectorX &pos, const Real invdt)
+{
+    int accumulatedNDOF = 0;
+    apply_each(
+        [&accumulatedNDOF, &pos, invdt](auto &objs) {
+            for (auto &obj : objs) {
+                obj.updatePositionsAndIntegrateVelocities(pos, accumulatedNDOF, invdt);
+                accumulatedNDOF += obj.nDOF();
+                if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
+                    obj.updateInertias();
+                }
             }
         },
         m_objects);

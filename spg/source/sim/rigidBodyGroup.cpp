@@ -63,9 +63,9 @@ void RigidBodyGroup::integratePositions(Real dt)
 {
     const int nbodies = nElements();
     for (int bodyIdx = 0; bodyIdx < nbodies; ++bodyIdx) {
-        // linear part
+        // Linear part
         m_x[bodyIdx] += m_v[bodyIdx] * dt;
-        // angular part
+        // Angular part
         if (const auto omegaNorm = m_omega[bodyIdx].norm(); omegaNorm != 0) {
             // Incremental compositions of the rotation
             m_rotationMatrix[bodyIdx] =
@@ -75,6 +75,23 @@ void RigidBodyGroup::integratePositions(Real dt)
     }
     updateThetas();
     updateInertias();
+}
+
+void RigidBodyGroup::updatePositionsAndIntegrateVelocities(const VectorX &pos, int offsetIndex, const Real invdt)
+{
+    const int nparticles = nElements();
+    for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
+        const int startOffset = particleIdx * 6 + offsetIndex;
+        // Linear part
+        m_v[particleIdx] = (pos.segment<3>(startOffset) - m_x[particleIdx]) * invdt;
+        m_x[particleIdx] = pos.segment<3>(startOffset);
+        // Angular part
+        const Matrix3 prevRotMat = m_rotationMatrix[particleIdx];
+        m_theta[particleIdx] = pos.segment<3>(startOffset + 3);
+        updateRotationMatrix(particleIdx);
+        Eigen::AngleAxis<spg::Real> deltaAxisAngle(m_rotationMatrix[particleIdx] * prevRotMat.transpose());
+        m_omega[particleIdx] = deltaAxisAngle.angle() * deltaAxisAngle.axis() * invdt;
+    }
 }
 
 void RigidBodyGroup::addBody(const Vector3 &p,
