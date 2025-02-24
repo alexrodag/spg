@@ -26,6 +26,7 @@
 #include <spg/sim/energy/stableSquaredNeoHookeanEnergy.h>
 #include <spg/sim/energy/stvkEnergy.h>
 #include <spg/sim/energy/springAnchorRigidBodyEnergy.h>
+#include <spg/sim/energy/springRigidBodyEnergy.h>
 #include <spg/sim/solver/xpbd.h>
 #include <spg/sim/solver/simplecticEuler.h>
 #include <spg/sim/solver/bdf2.h>
@@ -485,6 +486,77 @@ spg::SimObject createCloth(const float mass,
     return obj;
 }
 
+spg::RigidBodyGroup createAnchoredRigidBody(const spg::Real mass,
+                                            const float width,
+                                            const float height,
+                                            const float depth)
+{
+    spg::RigidBodyGroup rbGroup;
+    auto [vertices, faces] = spg::io::loadObj("./unit-cube.obj");
+    spg::Matrix3 transform;
+    transform.setZero();
+    transform(0, 0) = width;
+    transform(1, 1) = height;
+    transform(2, 2) = depth;
+    for (auto &v : vertices) {
+        v = transform * v;
+    }
+    spg::TriangleMesh mesh(vertices, vertices, faces);
+    spg::Matrix3 localInertia;
+    localInertia.setZero();
+    localInertia(0, 0) = 1.0 / 12.0 * mass * (height * height + depth * depth);
+    localInertia(1, 1) = 1.0 / 12.0 * mass * (width * width + depth * depth);
+    localInertia(2, 2) = 1.0 / 12.0 * mass * (width * width + height * height);
+
+    rbGroup.addBody({0, 0, 0}, {0, 0, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
+    rbGroup.omegas().back() = {1, 0.000001, 0.000001};
+    std::shared_ptr<spg::SpringAnchorRBEnergy> springEnergy = std::make_shared<spg::SpringAnchorRBEnergy>();
+    springEnergy->addStencil({0}, {-1, -1, 0}, {0.5, 1.5, 0}, 10);
+    rbGroup.addEnergy(springEnergy);
+    return rbGroup;
+}
+
+spg::RigidBodyGroup createRigidBodyChain(const spg::Real mass,
+                                         const float width,
+                                         const float height,
+                                         const float depth,
+                                         const int nBodies)
+{
+    spg::RigidBodyGroup rbGroup;
+    auto [vertices, faces] = spg::io::loadObj("./unit-cube.obj");
+    spg::Matrix3 transform;
+    transform.setZero();
+    transform(0, 0) = width;
+    transform(1, 1) = height;
+    transform(2, 2) = depth;
+    for (auto &v : vertices) {
+        v = transform * v;
+    }
+    spg::TriangleMesh mesh(vertices, vertices, faces);
+    spg::Matrix3 localInertia;
+    localInertia.setZero();
+    localInertia(0, 0) = 1.0 / 12.0 * mass * (height * height + depth * depth);
+    localInertia(1, 1) = 1.0 / 12.0 * mass * (width * width + depth * depth);
+    localInertia(2, 2) = 1.0 / 12.0 * mass * (width * width + height * height);
+
+    rbGroup.addBody({0, 0, 0}, {0, 0, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
+
+    std::shared_ptr<spg::SpringAnchorRBEnergy> springAnchorEnergy = std::make_shared<spg::SpringAnchorRBEnergy>();
+    springAnchorEnergy->addStencil({0}, {0.5, 1.5, 0}, {0.5, 1.5, 0}, 10000);
+
+    std::shared_ptr<spg::SpringRBEnergy> springEnergy = std::make_shared<spg::SpringRBEnergy>();
+    for (int i = 1; i < nBodies; ++i) {
+        rbGroup.addBody(
+            {0, -(height + 1) * i, 0}, {0, -(height + 1) * i, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
+        springEnergy->addStencil(
+            {i - 1, i}, {spg::Vector3{-0.5, -1.5, 0}, spg::Vector3{0.5, 1.5, 0}}, std::sqrt(2.0), 10000);
+    }
+
+    rbGroup.addEnergy(springAnchorEnergy);
+    rbGroup.addEnergy(springEnergy);
+    return rbGroup;
+}
+
 enum class SceneType {
     Cloth,
     Rope,
@@ -697,8 +769,8 @@ int main()
                         for (int j = 0; j < rbGroup.nElements(); ++j) {
                             auto *sm = polyscope::getSurfaceMesh("solver" + std::to_string(s) + "rbGroup" +
                                                                  std::to_string(i) + "rb" + std::to_string(j));
-                            const auto &pos = rbGroup.positions()[i];
-                            const auto &rotation = rbGroup.rotationMatrices()[i];
+                            const auto &pos = rbGroup.positions()[j];
+                            const auto &rotation = rbGroup.rotationMatrices()[j];
                             glm::mat4 mat(rotation(0, 0),
                                           rotation(0, 1),
                                           rotation(0, 2),
@@ -887,44 +959,21 @@ int main()
                 } else if (solverType == typeIndex++) {
                     solver = std::make_shared<spg::solver::QuasiStaticNewton>();
                 }
+                solver->setNumSubsteps(solverSubsteps[solverId]);
+                solver->setVerbosity(verbosity);
                 // TEMP HACK
                 if (dynamic_cast<spg::solver::ImplicitEulerBaraffWitkin *>(solver.get()) != nullptr ||
                     dynamic_cast<spg::solver::ImplicitEulerNewtonDv *>(solver.get()) != nullptr ||
                     dynamic_cast<spg::solver::ImplicitEulerNewtonRobust *>(solver.get()) != nullptr ||
                     dynamic_cast<spg::solver::ImplicitEulerNewtonDx *>(solver.get()) != nullptr) {
-                    spg::RigidBodyGroup rbGroup;
-                    auto [vertices, faces] = spg::io::loadObj("./unit-cube.obj");
-                    spg::Real width{1}, height{3}, depth{0.2}, mass{1};
-                    spg::Matrix3 transform;
-                    transform.setZero();
-                    transform(0, 0) = width;
-                    transform(1, 1) = height;
-                    transform(2, 2) = depth;
-                    for (auto &v : vertices) {
-                        v = transform * v;
+                    float width{1}, height{3}, depth{0.2f}, mass{1};
+                    solver->addObject(createRigidBodyChain(mass, width, height, depth, 5));
+                } else {
+                    const auto objects = createSceneObjects(
+                        sceneType, membraneType, bendingType, springType, femType, simObjectResolutionMultiplier);
+                    for (const auto &object : objects) {
+                        solver->addObject(object);
                     }
-                    spg::TriangleMesh mesh(vertices, vertices, faces);
-                    spg::Matrix3 localInertia;
-                    localInertia.setZero();
-                    localInertia(0, 0) = 1.0 / 12.0 * mass * (height * height + depth * depth);
-                    localInertia(1, 1) = 1.0 / 12.0 * mass * (width * width + depth * depth);
-                    localInertia(2, 2) = 1.0 / 12.0 * mass * (width * width + height * height);
-
-                    rbGroup.addBody({0, 0, 0}, {0, 0, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
-                    rbGroup.omegas().back() = {1, 0.000001, 0.000001};
-                    std::shared_ptr<spg::SpringAnchorRBEnergy> springEnergy =
-                        std::make_shared<spg::SpringAnchorRBEnergy>();
-                    springEnergy->addStencil({0}, {-1, -1, 0}, {0.5, 1.5, 0}, 10);
-                    rbGroup.addEnergy(springEnergy);
-                    solver->addObject(rbGroup);
-                }
-                // TEMP HACK
-                solver->setNumSubsteps(solverSubsteps[solverId]);
-                solver->setVerbosity(verbosity);
-                const auto objects = createSceneObjects(
-                    sceneType, membraneType, bendingType, springType, femType, simObjectResolutionMultiplier);
-                for (const auto &object : objects) {
-                    solver->addObject(object);
                 }
                 solver->setDt(dt);
             };
