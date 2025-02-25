@@ -116,7 +116,7 @@ void RigidBodyGroup::addBody(const Vector3 &p,
     m_w.push_back(mass == 0 ? 0 : 1 / mass);
     m_theta.push_back(theta);
     m_thetaInitial.push_back(theta);
-    m_omega.push_back({0.2, 1, 0.3});
+    m_omega.push_back(Vector3::Zero());
     m_theta0.push_back(theta0);
     m_localInertia.push_back(localInertia);
     m_localInertiaInv.push_back(localInertia.inverse());
