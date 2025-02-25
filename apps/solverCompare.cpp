@@ -542,14 +542,22 @@ spg::RigidBodyGroup createRigidBodyChain(const spg::Real mass,
     rbGroup.addBody({0, 0, 0}, {0, 0, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
 
     std::shared_ptr<spg::SpringAnchorRBEnergy> springAnchorEnergy = std::make_shared<spg::SpringAnchorRBEnergy>();
-    springAnchorEnergy->addStencil({0}, {0.5, 1.5, 0}, {0.5, 1.5, 0}, 10000);
+    springAnchorEnergy->addStencil({0}, {width * 0.5, height * 0.5, 0}, {width * 0.5, height * 0.5, 0}, 100);
 
     std::shared_ptr<spg::SpringRBEnergy> springEnergy = std::make_shared<spg::SpringRBEnergy>();
     for (int i = 1; i < nBodies; ++i) {
-        rbGroup.addBody(
-            {0, -(height + 1) * i, 0}, {0, -(height + 1) * i, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
+        rbGroup.addBody({-(height + 1) * i, 0, -(height + 1) * i},
+                        {-(height + 1) * i, 0, -(height + 1) * i},
+                        mass,
+                        {0, 0, 0},
+                        {0, 0, 0},
+                        localInertia,
+                        mesh);
         springEnergy->addStencil(
-            {i - 1, i}, {spg::Vector3{-0.5, -1.5, 0}, spg::Vector3{0.5, 1.5, 0}}, std::sqrt(2.0), 10000);
+            {i - 1, i},
+            {spg::Vector3{-width * 0.5, -height * 0.5, 0}, spg::Vector3{width * 0.5, height * 0.5, 0}},
+            std::sqrt(width * 2),
+            100);
     }
 
     rbGroup.addEnergy(springAnchorEnergy);
@@ -739,35 +747,35 @@ int main()
 
         auto l_callback = [&]() {
             auto l_updateView = [&solvers]() {
-                for (int s = 0; s < solvers.size(); ++s) {
-                    const auto &solver = solvers[s];
+                for (int solverId = 0; solverId < solvers.size(); ++solverId) {
+                    const auto &solver = solvers[solverId];
                     for (int i = 0; i < solver->simObjects().size(); ++i) {
-                        auto *pc =
-                            polyscope::getPointCloud("solver" + std::to_string(s) + "simObj" + std::to_string(i));
+                        auto *pc = polyscope::getPointCloud("solver" + std::to_string(solverId) + "simObj" +
+                                                            std::to_string(i));
                         pc->updatePointPositions(solver->simObjects()[i].positions());
-                            if (polyscope::hasCurveNetwork("solver" + std::to_string(s) + "simObj" + std::to_string(i) +
-                                                           "springs")) {
-                                auto *cn = polyscope::getCurveNetwork("solver" + std::to_string(s) + "simObj" +
-                                                                      std::to_string(i) + "springs");
-                                cn->updateNodePositions(solver->simObjects()[i].positions());
+                        if (polyscope::hasCurveNetwork("solver" + std::to_string(solverId) + "simObj" +
+                                                       std::to_string(i) + "springs")) {
+                            auto *cn = polyscope::getCurveNetwork("solver" + std::to_string(solverId) + "simObj" +
+                                                                  std::to_string(i) + "springs");
+                            cn->updateNodePositions(solver->simObjects()[i].positions());
                         }
-                        if (polyscope::hasSurfaceMesh("solver" + std::to_string(s) + "simObj" + std::to_string(i) +
-                                                      "membrane")) {
-                                auto *sm = polyscope::getSurfaceMesh("solver" + std::to_string(s) + "simObj" +
-                                                                     std::to_string(i) + "membrane");
-                                sm->updateVertexPositions(solver->simObjects()[i].positions());
+                        if (polyscope::hasSurfaceMesh("solver" + std::to_string(solverId) + "simObj" +
+                                                      std::to_string(i) + "membrane")) {
+                            auto *sm = polyscope::getSurfaceMesh("solver" + std::to_string(solverId) + "simObj" +
+                                                                 std::to_string(i) + "membrane");
+                            sm->updateVertexPositions(solver->simObjects()[i].positions());
                         }
-                        if (polyscope::hasVolumeMesh("solver" + std::to_string(s) + "simObj" + std::to_string(i) +
-                                                     "fem")) {
-                                auto *vm = polyscope::getVolumeMesh("solver" + std::to_string(s) + "simObj" +
-                                                                    std::to_string(i) + "fem");
-                                vm->updateVertexPositions(solver->simObjects()[i].positions());
+                        if (polyscope::hasVolumeMesh("solver" + std::to_string(solverId) + "simObj" +
+                                                     std::to_string(i) + "fem")) {
+                            auto *vm = polyscope::getVolumeMesh("solver" + std::to_string(solverId) + "simObj" +
+                                                                std::to_string(i) + "fem");
+                            vm->updateVertexPositions(solver->simObjects()[i].positions());
                         }
                     }
                     for (int i = 0; i < solver->rbGroups().size(); ++i) {
                         auto &rbGroup = solver->rbGroups()[i];
                         for (int j = 0; j < rbGroup.nElements(); ++j) {
-                            auto *sm = polyscope::getSurfaceMesh("solver" + std::to_string(s) + "rbGroup" +
+                            auto *sm = polyscope::getSurfaceMesh("solver" + std::to_string(solverId) + "rbGroup" +
                                                                  std::to_string(i) + "rb" + std::to_string(j));
                             const auto &pos = rbGroup.positions()[j];
                             const auto &rotation = rbGroup.rotationMatrices()[j];
@@ -789,6 +797,38 @@ int main()
                                           1);
                             mat = glm::transpose(mat);
                             sm->setTransform(mat);
+                        }
+                        for (auto energy : rbGroup.energies()) {
+                            if (auto springEnergy = dynamic_cast<spg::SpringRBEnergy *>(energy.get());
+                                springEnergy != nullptr) {
+                                std::vector<spg::Vector3> springPositions;
+                                for (int s = 0; s < springEnergy->nStencils(); ++s) {
+                                    auto rbIds = springEnergy->stencils()[s];
+                                    springPositions.push_back(rbGroup.positions()[rbIds[0]] +
+                                                              rbGroup.rotationMatrices()[rbIds[0]] *
+                                                                  (springEnergy->localRBPoints()[s][0]));
+                                    springPositions.push_back(rbGroup.positions()[rbIds[1]] +
+                                                              rbGroup.rotationMatrices()[rbIds[1]] *
+                                                                  (springEnergy->localRBPoints()[s][1]));
+                                }
+                                auto *cn = polyscope::getCurveNetwork("solver" + std::to_string(solverId) + "rbGroup" +
+                                                                      std::to_string(i) + "springs");
+                                cn->updateNodePositions(springPositions);
+                            } else if (auto springAnchorEnergy =
+                                           dynamic_cast<spg::SpringAnchorRBEnergy *>(energy.get());
+                                       springAnchorEnergy != nullptr) {
+                                std::vector<spg::Vector3> springPositions;
+                                for (int s = 0; s < springAnchorEnergy->nStencils(); ++s) {
+                                    auto rbIds = springAnchorEnergy->stencils()[s];
+                                    springPositions.push_back(rbGroup.positions()[rbIds[0]] +
+                                                              rbGroup.rotationMatrices()[rbIds[0]] *
+                                                                  (springAnchorEnergy->localRBPoints()[s]));
+                                    springPositions.push_back(springAnchorEnergy->anchors()[s]);
+                                }
+                                auto *cn = polyscope::getCurveNetwork("solver" + std::to_string(solverId) + "rbGroup" +
+                                                                      std::to_string(i) + "anchor-springs");
+                                cn->updateNodePositions(springPositions);
+                            }
                         }
                     }
                 }
@@ -868,7 +908,7 @@ int main()
                     }
                 }
                 for (int i = 0; i < solver->rbGroups().size(); ++i) {
-                    auto &rbGroup = solver->rbGroups()[i];
+                    const spg::RigidBodyGroup &rbGroup = solver->rbGroups()[i];
                     for (int j = 0; j < rbGroup.nElements(); ++j) {
                         polyscope::SurfaceMesh *sm =
                             polyscope::registerSurfaceMesh("solver" + std::to_string(solverId) + "rbGroup" +
@@ -895,6 +935,43 @@ int main()
                                       1);
                         mat = glm::transpose(mat);
                         sm->setTransform(mat);
+                    }
+                    for (auto energy : rbGroup.energies()) {
+                        if (auto springEnergy = dynamic_cast<spg::SpringRBEnergy *>(energy.get());
+                            springEnergy != nullptr) {
+                            std::vector<spg::Vector3> springPositions;
+                            std::vector<std::array<int, 2>> springIndices;
+                            for (int s = 0; s < springEnergy->nStencils(); ++s) {
+                                auto rbIds = springEnergy->stencils()[s];
+                                springPositions.push_back(rbGroup.positions()[rbIds[0]] +
+                                                          rbGroup.rotationMatrices()[rbIds[0]] *
+                                                              (springEnergy->localRBPoints()[s][0]));
+                                springPositions.push_back(rbGroup.positions()[rbIds[1]] +
+                                                          rbGroup.rotationMatrices()[rbIds[1]] *
+                                                              (springEnergy->localRBPoints()[s][1]));
+                                springIndices.push_back({s * 2, s * 2 + 1});
+                            }
+                            polyscope::CurveNetwork *cn = polyscope::registerCurveNetwork(
+                                "solver" + std::to_string(solverId) + "rbGroup" + std::to_string(i) + "springs",
+                                springPositions,
+                                springIndices);
+                        } else if (auto springAnchorEnergy = dynamic_cast<spg::SpringAnchorRBEnergy *>(energy.get());
+                                   springAnchorEnergy != nullptr) {
+                            std::vector<spg::Vector3> springPositions;
+                            std::vector<std::array<int, 2>> springIndices;
+                            for (int s = 0; s < springAnchorEnergy->nStencils(); ++s) {
+                                auto rbIds = springAnchorEnergy->stencils()[s];
+                                springPositions.push_back(rbGroup.positions()[rbIds[0]] +
+                                                          rbGroup.rotationMatrices()[rbIds[0]] *
+                                                              (springAnchorEnergy->localRBPoints()[s]));
+                                springPositions.push_back(springAnchorEnergy->anchors()[s]);
+                                springIndices.push_back({s * 2, s * 2 + 1});
+                            }
+                            polyscope::CurveNetwork *cn = polyscope::registerCurveNetwork(
+                                "solver" + std::to_string(solverId) + "rbGroup" + std::to_string(i) + "anchor-springs",
+                                springPositions,
+                                springIndices);
+                        }
                     }
                 }
             };
@@ -966,8 +1043,9 @@ int main()
                     dynamic_cast<spg::solver::ImplicitEulerNewtonDv *>(solver.get()) != nullptr ||
                     dynamic_cast<spg::solver::ImplicitEulerNewtonRobust *>(solver.get()) != nullptr ||
                     dynamic_cast<spg::solver::ImplicitEulerNewtonDx *>(solver.get()) != nullptr) {
-                    float width{1}, height{3}, depth{0.2f}, mass{1};
-                    solver->addObject(createRigidBodyChain(mass, width, height, depth, 5));
+                    float width{1}, height{1}, depth{1}, mass{1};
+                    solver->addObject(
+                        createRigidBodyChain(mass, width, height, depth, 1 * simObjectResolutionMultiplier));
                 } else {
                     const auto objects = createSceneObjects(
                         sceneType, membraneType, bendingType, springType, femType, simObjectResolutionMultiplier);

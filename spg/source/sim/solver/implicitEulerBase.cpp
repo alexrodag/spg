@@ -110,6 +110,7 @@ void ImplicitEulerBase::getSystemForce(VectorX &f) const
                     const Real mass = masses[i];
                     f.segment<3>(i * obj.s_nDOFs + accumulatedNDOF) += m_gravity * mass;
                     if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
+                        // TODO: Transform this into an implicit energy, as it can lead to instability
                         f.segment<3>(i * obj.s_nDOFs + 3 + accumulatedNDOF) +=
                             -l_skew(obj.omegas()[i]) * obj.inertias()[i] * obj.omegas()[i];
                     }
