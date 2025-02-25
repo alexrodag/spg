@@ -745,23 +745,23 @@ int main()
                         auto *pc =
                             polyscope::getPointCloud("solver" + std::to_string(s) + "simObj" + std::to_string(i));
                         pc->updatePointPositions(solver->simObjects()[i].positions());
-                        for (auto energy : solver->simObjects()[i].energies()) {
                             if (polyscope::hasCurveNetwork("solver" + std::to_string(s) + "simObj" + std::to_string(i) +
                                                            "springs")) {
                                 auto *cn = polyscope::getCurveNetwork("solver" + std::to_string(s) + "simObj" +
                                                                       std::to_string(i) + "springs");
                                 cn->updateNodePositions(solver->simObjects()[i].positions());
-                            } else if (polyscope::hasSurfaceMesh("solver" + std::to_string(s) + "simObj" +
-                                                                 std::to_string(i) + "membrane")) {
+                        }
+                        if (polyscope::hasSurfaceMesh("solver" + std::to_string(s) + "simObj" + std::to_string(i) +
+                                                      "membrane")) {
                                 auto *sm = polyscope::getSurfaceMesh("solver" + std::to_string(s) + "simObj" +
                                                                      std::to_string(i) + "membrane");
                                 sm->updateVertexPositions(solver->simObjects()[i].positions());
-                            } else if (polyscope::hasVolumeMesh("solver" + std::to_string(s) + "simObj" +
-                                                                std::to_string(i) + "fem")) {
+                        }
+                        if (polyscope::hasVolumeMesh("solver" + std::to_string(s) + "simObj" + std::to_string(i) +
+                                                     "fem")) {
                                 auto *vm = polyscope::getVolumeMesh("solver" + std::to_string(s) + "simObj" +
                                                                     std::to_string(i) + "fem");
                                 vm->updateVertexPositions(solver->simObjects()[i].positions());
-                            }
                         }
                     }
                     for (int i = 0; i < solver->rbGroups().size(); ++i) {
