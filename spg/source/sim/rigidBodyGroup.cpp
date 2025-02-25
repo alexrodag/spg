@@ -81,7 +81,7 @@ void RigidBodyGroup::integratePositionsFromDx(const VectorX &dx, const VectorX &
 {
     const int nbodies = nElements();
     for (int bodyIdx = 0; bodyIdx < nbodies; ++bodyIdx) {
-        const int startOffset = bodyIdx * 3 + offsetIndex;
+        const int startOffset = bodyIdx * 6 + offsetIndex;
         // Linear part
         m_x[bodyIdx] += dx.segment<3>(startOffset);
         m_v[bodyIdx] = (m_x[bodyIdx] - oldPos.segment<3>(startOffset)) * invdt;
