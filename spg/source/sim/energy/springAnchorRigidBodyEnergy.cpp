@@ -64,17 +64,17 @@ auto l_springRBConnectorEnergy =
 }  // namespace
 
 void SpringAnchorRBEnergy::addStencil(std::array<int, s_stencilSize> stencil,
-                                      const Vector3 &anchor,
                                       const Vector3 &localRigidBodyPoint,
+                                      const Vector3 &anchor,
                                       const Real stiffness = 0)
 {
     m_stencils.push_back(stencil);
+    m_localRBPoint.push_back(localRigidBodyPoint);
+    m_anchor.push_back(anchor);
     m_modelStiffness.push_back(StiffnessMat{stiffness});
     m_effectiveStiffness.push_back(StiffnessMat{stiffness});
     m_modelCompliance.push_back(m_modelStiffness.back().inverse());
     m_effectiveCompliance.push_back(m_effectiveStiffness.back().inverse());
-    m_anchor.push_back(anchor);
-    m_localRBPoint.push_back(localRigidBodyPoint);
 }
 
 void SpringAnchorRBEnergy::dEnergy(const int i, const RigidBodyGroup &obj, RealAD1 &dC) const
@@ -109,7 +109,7 @@ SpringAnchorRBEnergy::EnergyGrad SpringAnchorRBEnergy::energyGradient(int i, con
     l_springRBConnectorEnergy(this, i, obj, e);
     RBPointMapping mapping;
     mapping.m_localPoint = this->localRBPoints()[i];
-    const auto J = mapping.jacobian(obj.rotationMatrices()[i]);
+    const auto J = mapping.jacobian(obj.rotationMatrices()[this->stencils()[i][0]]);
     return J.transpose() * e.grad;
 }
 SpringAnchorRBEnergy::EnergyHess SpringAnchorRBEnergy::energyHessian(int i, const RigidBodyGroup &obj) const
@@ -118,7 +118,7 @@ SpringAnchorRBEnergy::EnergyHess SpringAnchorRBEnergy::energyHessian(int i, cons
     l_springRBConnectorEnergy(this, i, obj, e);
     RBPointMapping mapping;
     mapping.m_localPoint = this->localRBPoints()[i];
-    const auto J = mapping.jacobian(obj.rotationMatrices()[i]);
+    const auto J = mapping.jacobian(obj.rotationMatrices()[this->stencils()[i][0]]);
     return J.transpose() * e.Hess * J;
 }
 }  // namespace spg

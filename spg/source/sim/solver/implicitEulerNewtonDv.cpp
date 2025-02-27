@@ -41,7 +41,7 @@ void ImplicitEulerNewtonDv::step()
         getSystemMassMatrix(M);
 
         // Set initial guess as inertial position
-        integrateObjectsPositions(dt);
+        integrateObjectsState(dt);
 
         // Compute forces, and stiffness matrix
         VectorX f(totalNDOF);
@@ -60,7 +60,7 @@ void ImplicitEulerNewtonDv::step()
         // Update objects state
         setObjectsPositions(x0);
         setObjectsVelocities(v0 + dv);
-        integrateObjectsPositions(dt);
+        integrateObjectsState(dt);
     }
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {

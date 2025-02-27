@@ -3,6 +3,7 @@
 #include <spg/sim/simObject.h>
 #include <spg/sim/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
+#include <spg/utils/functionalUtilities.h>
 
 #include <iostream>
 
@@ -20,20 +21,16 @@ void QuasiStaticNewton::step()
     const Real dtdt = dt * dt;
     // Compute total DOFs
     int accumulatedNDOF = 0;
-    for (const auto &object : std::get<std::vector<SimObject>>(m_objects)) {
-        accumulatedNDOF += object.nDOF();
-    }
+    apply_each(
+        [&accumulatedNDOF](const auto &objs) {
+            for (const auto &obj : objs) {
+                accumulatedNDOF += obj.nDOF();
+            }
+        },
+        m_objects);
     const int totalNDOF{accumulatedNDOF};
 
     for (int s = 0; s < m_nsubsteps; ++s) {
-        // Store state backup
-        VectorX x0(totalNDOF);
-        getSystemPositions(x0);
-
-        // Set initial guess
-        const VectorX xi = x0;
-        // Note: No need to update objects positions since the guess is the current positions
-
         // Compute forces, mass matrix and stiffness matrix
         VectorX f(totalNDOF);
         SparseMatrix M(totalNDOF, totalNDOF);
@@ -44,15 +41,14 @@ void QuasiStaticNewton::step()
 
         // Create Linear problem left and right hand sides
         const SparseMatrix LHS = M - dtdt * K;
-        const VectorX RHS = dtdt * f - M * (xi - x0);
+        const VectorX RHS = dtdt * f;
 
         // Solve problem to obtain dx
         VectorX dx;
         solveLinearSystem(LHS, RHS, dx);
 
         // Update objects state
-        const VectorX x = xi + dx;
-        setObjectsPositions(x);
+        updateObjectsPositionsFromDx(dx);
     }
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {

@@ -3,6 +3,7 @@
 #include <spg/sim/simObject.h>
 #include <spg/sim/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
+#include <spg/utils/functionalUtilities.h>
 
 #include <iostream>
 
@@ -20,9 +21,13 @@ void QuasiStaticNewtonRobust::step()
 
     // Compute total DOFs
     int accumulatedNDOF = 0;
-    for (const auto &object : std::get<std::vector<SimObject>>(m_objects)) {
-        accumulatedNDOF += object.nDOF();
-    }
+    apply_each(
+        [&accumulatedNDOF](const auto &objs) {
+            for (const auto &obj : objs) {
+                accumulatedNDOF += obj.nDOF();
+            }
+        },
+        m_objects);
     const int totalNDOF{accumulatedNDOF};
 
     for (int s = 0; s < m_nsubsteps; ++s) {
@@ -45,6 +50,7 @@ void QuasiStaticNewtonRobust::step()
         int currentNewtonIterations = 0;
         // Set initial guess
         VectorX xi = x0;
+        VectorX xCandidate(totalNDOF);
         do {
             // Compute forces, mass matrix and stiffness matrix
             VectorX f(totalNDOF);
@@ -69,15 +75,16 @@ void QuasiStaticNewtonRobust::step()
             Real alpha = 1.;
             while (stepResidual >= initialResidual && lineSearchIteration < m_maxLineSearchIterations) {
                 // Update objects state
-                const VectorX x = xi + dx * alpha;
-                setObjectsPositions(x);
+                setObjectsPositions(xi);
+                updateObjectsPositionsFromDx(dx * alpha);
+                getSystemPositions(xCandidate);
                 // compute new RHS
                 getSystemForce(f);
-                stepResidual = (dtdt * f - M * (x - x0)).norm();
+                stepResidual = (dtdt * f - M * (xCandidate - x0)).norm();
                 /*std::cout << "  Line search with step " << alpha << ". Step residual: " << stepResidual
                           << ". Initial residual: " << initialResidual << "\n";*/
                 if (stepResidual < initialResidual) {
-                    xi = x;
+                    xi = xCandidate;
                 }
                 alpha *= 0.5;
                 lineSearchIteration++;
