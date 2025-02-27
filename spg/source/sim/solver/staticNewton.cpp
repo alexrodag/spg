@@ -3,6 +3,7 @@
 #include <spg/sim/simObject.h>
 #include <spg/sim/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
+#include <spg/utils/functionalUtilities.h>
 
 #include <iostream>
 
@@ -18,20 +19,16 @@ void StaticNewton::step()
 
     // Compute total DOFs
     int accumulatedNDOF = 0;
-    for (const auto &object : std::get<std::vector<SimObject>>(m_objects)) {
-        accumulatedNDOF += object.nDOF();
-    }
+    apply_each(
+        [&accumulatedNDOF](const auto &objs) {
+            for (const auto &obj : objs) {
+                accumulatedNDOF += obj.nDOF();
+            }
+        },
+        m_objects);
     const int totalNDOF{accumulatedNDOF};
 
     for (int s = 0; s < m_nsubsteps; ++s) {
-        // Store state backup
-        VectorX x0(totalNDOF);
-        getSystemPositions(x0);
-
-        // Set initial guess
-        const VectorX xi = x0;
-        setObjectsPositions(xi);
-
         // Compute forces, mass matrix and stiffness matrix
         VectorX f(totalNDOF);
         SparseMatrix K(totalNDOF, totalNDOF);
@@ -47,8 +44,7 @@ void StaticNewton::step()
         solveLinearSystem(LHS, RHS, dx);
 
         // Update objects state
-        const VectorX x = xi + dx;
-        setObjectsPositions(x);
+        updateObjectsPositionsFromDx(dx);
     }
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {

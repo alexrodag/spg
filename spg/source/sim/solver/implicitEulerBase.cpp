@@ -65,24 +65,37 @@ void ImplicitEulerBase::setObjectsVelocities(const VectorX &vel)
         m_objects);
 }
 
-void ImplicitEulerBase::integrateObjectsPositions(const Real dt)
+void ImplicitEulerBase::integrateObjectsState(const Real dt)
 {
     apply_each(
         [dt](auto &objs) {
             for (auto &obj : objs) {
-                obj.integratePositions(dt);
+                obj.integrateState(dt);
             }
         },
         m_objects);
 }
 
-void ImplicitEulerBase::IntegrateOBjectsPositionsFromDx(const VectorX &dx, const VectorX &oldPos, const Real invdt)
+void ImplicitEulerBase::integrateObjectsStateFromDx(const VectorX &dx, const VectorX &oldPos, const Real invdt)
 {
     int accumulatedNDOF = 0;
     apply_each(
         [&accumulatedNDOF, &dx, &oldPos, invdt](auto &objs) {
             for (auto &obj : objs) {
-                obj.integratePositionsFromDx(dx, oldPos, accumulatedNDOF, invdt);
+                obj.integrateStateFromDx(dx, oldPos, accumulatedNDOF, invdt);
+                accumulatedNDOF += obj.nDOF();
+            }
+        },
+        m_objects);
+}
+
+void ImplicitEulerBase::updateObjectsPositionsFromDx(const VectorX &dx)
+{
+    int accumulatedNDOF = 0;
+    apply_each(
+        [&accumulatedNDOF, &dx](auto &objs) {
+            for (auto &obj : objs) {
+                obj.updatePositionsFromDx(dx, accumulatedNDOF);
                 accumulatedNDOF += obj.nDOF();
             }
         },
@@ -122,7 +135,7 @@ void ImplicitEulerBase::getSystemForce(VectorX &f) const
                 for (const auto &energy : energies) {
                     const auto nstencils = energy->nStencils();
                     timer.start();
-#pragma omp parallel for
+                    // #pragma omp parallel for
                     for (int i = 0; i < nstencils; ++i) {
                         energy->accumulateForces(i, obj, accumulatedNDOF, f, true);
                     }

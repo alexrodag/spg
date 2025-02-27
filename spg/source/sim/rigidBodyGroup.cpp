@@ -59,7 +59,7 @@ void RigidBodyGroup::setVelocities(const VectorX &vel, int offsetIndex)
     }
 }
 
-void RigidBodyGroup::integratePositions(Real dt)
+void RigidBodyGroup::integrateState(Real dt)
 {
     const int nbodies = nElements();
     for (int bodyIdx = 0; bodyIdx < nbodies; ++bodyIdx) {
@@ -77,7 +77,7 @@ void RigidBodyGroup::integratePositions(Real dt)
     updateInertias();
 }
 
-void RigidBodyGroup::integratePositionsFromDx(const VectorX &dx, const VectorX &oldPos, int offsetIndex, Real invdt)
+void RigidBodyGroup::integrateStateFromDx(const VectorX &dx, const VectorX &oldPos, int offsetIndex, Real invdt)
 {
     const int nbodies = nElements();
     for (int bodyIdx = 0; bodyIdx < nbodies; ++bodyIdx) {
@@ -95,6 +95,25 @@ void RigidBodyGroup::integratePositionsFromDx(const VectorX &dx, const VectorX &
         Eigen::AngleAxis<spg::Real> deltaAxisAngle(
             m_rotationMatrix[bodyIdx] * axisAngleToRotMatrix(oldPos.segment<3>(startOffset + 3)).transpose());
         m_omega[bodyIdx] = deltaAxisAngle.angle() * deltaAxisAngle.axis() * invdt;
+    }
+    updateThetas();
+    updateInertias();
+}
+
+void RigidBodyGroup::updatePositionsFromDx(const VectorX &dx, int offsetIndex)
+{
+    const int nbodies = nElements();
+    for (int bodyIdx = 0; bodyIdx < nbodies; ++bodyIdx) {
+        const int startOffset = bodyIdx * 6 + offsetIndex;
+        // Linear part
+        m_x[bodyIdx] += dx.segment<3>(startOffset);
+        // Angular part
+        // Incremental compositions of the rotation
+        if (const Real dxNorm = dx.segment<3>(startOffset + 3).norm(); dxNorm != 0) {
+            m_rotationMatrix[bodyIdx] =
+                Eigen::AngleAxis<spg::Real>(dxNorm, dx.segment<3>(startOffset + 3) / dxNorm).toRotationMatrix() *
+                m_rotationMatrix[bodyIdx];
+        }
     }
     updateThetas();
     updateInertias();

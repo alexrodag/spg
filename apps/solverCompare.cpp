@@ -486,6 +486,36 @@ spg::SimObject createCloth(const float mass,
     return obj;
 }
 
+spg::RigidBodyGroup createPulledRigidBody(const spg::Real mass,
+                                          const float width,
+                                          const float height,
+                                          const float depth)
+{
+    spg::RigidBodyGroup rbGroup;
+    auto [vertices, faces] = spg::io::loadObj("./unit-cube.obj");
+    spg::Matrix3 transform;
+    transform.setZero();
+    transform(0, 0) = width;
+    transform(1, 1) = height;
+    transform(2, 2) = depth;
+    for (auto &v : vertices) {
+        v = transform * v;
+    }
+    spg::TriangleMesh mesh(vertices, vertices, faces);
+    spg::Matrix3 localInertia;
+    localInertia.setZero();
+    localInertia(0, 0) = 1.0 / 12.0 * mass * (height * height + depth * depth);
+    localInertia(1, 1) = 1.0 / 12.0 * mass * (width * width + depth * depth);
+    localInertia(2, 2) = 1.0 / 12.0 * mass * (width * width + height * height);
+
+    rbGroup.addBody({0, 0, 0}, {0, 0, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
+    rbGroup.omegas().back() = {1, 0.000001, 0.000001};
+    std::shared_ptr<spg::SpringAnchorRBEnergy> springEnergy = std::make_shared<spg::SpringAnchorRBEnergy>();
+    springEnergy->addStencil({0}, {width * 0.5, height * 0.5, 0}, {-1, -1, 0}, 10);
+    rbGroup.addEnergy(springEnergy);
+    return rbGroup;
+}
+
 spg::RigidBodyGroup createAnchoredRigidBody(const spg::Real mass,
                                             const float width,
                                             const float height,
@@ -509,10 +539,13 @@ spg::RigidBodyGroup createAnchoredRigidBody(const spg::Real mass,
     localInertia(2, 2) = 1.0 / 12.0 * mass * (width * width + height * height);
 
     rbGroup.addBody({0, 0, 0}, {0, 0, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
-    rbGroup.omegas().back() = {1, 0.000001, 0.000001};
-    std::shared_ptr<spg::SpringAnchorRBEnergy> springEnergy = std::make_shared<spg::SpringAnchorRBEnergy>();
-    springEnergy->addStencil({0}, {-1, -1, 0}, {0.5, 1.5, 0}, 10);
-    rbGroup.addEnergy(springEnergy);
+
+    std::shared_ptr<spg::SpringAnchorRBEnergy> springAnchorEnergy = std::make_shared<spg::SpringAnchorRBEnergy>();
+    springAnchorEnergy->addStencil({0}, {0, height * 0.5, 0}, {0, height * 0.5, -1}, 100);
+    springAnchorEnergy->addStencil({0}, {width * 0.5, -height * 0.5, 0}, {width, -height * 0.5, 1}, 100);
+    springAnchorEnergy->addStencil({0}, {-width * 0.5, -height * 0.5, 0}, {-width, -height * 0.5, 1}, 100);
+
+    rbGroup.addEnergy(springAnchorEnergy);
     return rbGroup;
 }
 
@@ -990,6 +1023,10 @@ int main()
                     for (int j = 0; j < rbGroup.nElements(); ++j) {
                         polyscope::removeSurfaceMesh("solver" + std::to_string(solverId) + "rbGroup" +
                                                      std::to_string(i) + "rb" + std::to_string(j));
+                        polyscope::removeCurveNetwork("solver" + std::to_string(i) + "rbGroup" + std::to_string(j) +
+                                                      "springs");
+                        polyscope::removeCurveNetwork("solver" + std::to_string(i) + "rbGroup" + std::to_string(j) +
+                                                      "anchor-springs");
                     }
                 }
             };
@@ -1042,10 +1079,15 @@ int main()
                 if (dynamic_cast<spg::solver::ImplicitEulerBaraffWitkin *>(solver.get()) != nullptr ||
                     dynamic_cast<spg::solver::ImplicitEulerNewtonDv *>(solver.get()) != nullptr ||
                     dynamic_cast<spg::solver::ImplicitEulerNewtonRobust *>(solver.get()) != nullptr ||
-                    dynamic_cast<spg::solver::ImplicitEulerNewtonDx *>(solver.get()) != nullptr) {
+                    dynamic_cast<spg::solver::ImplicitEulerNewtonDx *>(solver.get()) != nullptr ||
+                    dynamic_cast<spg::solver::StaticNewton *>(solver.get()) != nullptr ||
+                    dynamic_cast<spg::solver::QuasiStaticNewton *>(solver.get()) != nullptr ||
+                    dynamic_cast<spg::solver::QuasiStaticNewtonRobust *>(solver.get()) != nullptr) {
                     float width{1}, height{1}, depth{1}, mass{1};
-                    solver->addObject(
-                        createRigidBodyChain(mass, width, height, depth, 1 * simObjectResolutionMultiplier));
+                    /* solver->addObject(createAnchoredRigidBody(mass, width, height, depth)); */
+                    solver->addObject(createPulledRigidBody(mass, width, height, depth));
+                    /* solver->addObject(
+                        createRigidBodyChain(mass, width, height, depth, 1 * simObjectResolutionMultiplier)); */
                 } else {
                     const auto objects = createSceneObjects(
                         sceneType, membraneType, bendingType, springType, femType, simObjectResolutionMultiplier);
