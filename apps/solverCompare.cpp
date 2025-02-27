@@ -1085,9 +1085,9 @@ int main()
                     dynamic_cast<spg::solver::QuasiStaticNewtonRobust *>(solver.get()) != nullptr) {
                     float width{1}, height{1}, depth{1}, mass{1};
                     /* solver->addObject(createAnchoredRigidBody(mass, width, height, depth)); */
-                    solver->addObject(createPulledRigidBody(mass, width, height, depth));
-                    /* solver->addObject(
-                        createRigidBodyChain(mass, width, height, depth, 1 * simObjectResolutionMultiplier)); */
+                    /* solver->addObject(createPulledRigidBody(mass, width, height, depth)); */
+                    solver->addObject(
+                        createRigidBodyChain(mass, width, height, depth, 1 * simObjectResolutionMultiplier));
                 } else {
                     const auto objects = createSceneObjects(
                         sceneType, membraneType, bendingType, springType, femType, simObjectResolutionMultiplier);
