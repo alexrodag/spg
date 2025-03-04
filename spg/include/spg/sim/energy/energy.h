@@ -2,6 +2,7 @@
 
 #include <spg/types.h>
 #include <spg/sim/simObject.h>
+#include <spg/sim/rigidBodyGroup.h>
 
 #include <TinyAD/Scalar.hh>
 #include <TinyAD/Utils/HessianProjection.hh>
@@ -46,6 +47,7 @@ public:
     virtual Real energy(int i, const TSimObject &obj) const = 0;
     // Note: These two are generic, but slower since they rely on runtime sized VectorX and MatrixX. Avoid their use if
     // possible.
+    // TODO: The current templatized Energy class allows for compile-time sizes. Refactor this.
     virtual VectorX energyGradientGeneric(int i, const TSimObject &obj) const = 0;
     virtual MatrixX energyHessianGeneric(int i, const TSimObject &obj) const = 0;
 
@@ -139,25 +141,39 @@ public:
 
     virtual void updateExplicitVelocities(int i, TSimObject &obj, Real dt, bool atomicUpdate) const
     {
-        if constexpr (TSimObject::s_nDOFs == 3) {
-            const auto grad = energyGradient(i, obj);
-            VectorT<Real, TstencilSize * s_nDOFs> W;
+        const auto grad = energyGradient(i, obj);
+        // TODO: Hardcoded linear vs angular dof sizes to 3. Refactor.
+        // TODO: Maybe can be made more efficient by separating the computation of linear and angular parts and treating
+        // the linear with an asdiagonal matrix. Profile
+        MatrixT<Real, TstencilSize * s_nDOFs> W;
+        W.setZero();
+        for (int s = 0; s < TstencilSize; ++s) {
+            const auto w = obj.invMasses()[m_stencils[i][s]];
+            for (int m = 0; m < 3; ++m) {
+                const auto diagonalIndex = s * s_nDOFs + m;
+                W(diagonalIndex, diagonalIndex) = w;
+            }
+            if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
+                const auto diagonalIndex = s * s_nDOFs + 3;
+                W.block<3, 3>(diagonalIndex, diagonalIndex) = obj.invInertias()[m_stencils[i][s]];
+            }
+        }
+        const EnergyGrad deltaV = W * -grad * dt;
+        if (!atomicUpdate) {
             for (int s = 0; s < TstencilSize; ++s) {
-                const auto w = obj.invMasses()[m_stencils[i][s]];
-                for (int m = 0; m < s_nDOFs; ++m) {
-                    W(s * s_nDOFs + m) = w;
+                obj.velocities()[m_stencils[i][s]] += deltaV.template segment<3>(s * s_nDOFs);
+                if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
+                    obj.omegas()[m_stencils[i][s]] += deltaV.template segment<3>(s * s_nDOFs + 3);
                 }
             }
-            const EnergyGrad deltaV = W.asDiagonal() * -grad * dt;
-            if (!atomicUpdate) {
-                for (int s = 0; s < TstencilSize; ++s) {
-                    obj.velocities()[m_stencils[i][s]] += deltaV.template segment<s_nDOFs>(s * s_nDOFs);
-                }
-            } else {
-                for (int s = 0; s < TstencilSize; ++s) {
-                    for (int d = 0; d < s_nDOFs; ++d) {
+        } else {
+            for (int s = 0; s < TstencilSize; ++s) {
+                for (int d = 0; d < 3; ++d) {
 #pragma omp atomic
-                        obj.velocities()[m_stencils[i][s]](d) += deltaV(s * s_nDOFs + d);
+                    obj.velocities()[m_stencils[i][s]](d) += deltaV(s * s_nDOFs + d);
+                    if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
+#pragma omp atomic
+                        obj.omegas()[m_stencils[i][s]](d) += deltaV(s * s_nDOFs + 3 + d);
                     }
                 }
             }
