@@ -3,6 +3,7 @@
 #include <spg/sim/simObject.h>
 #include <spg/sim/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
+#include <spg/utils/functionalUtilities.h>
 
 #include <iostream>
 
@@ -19,40 +20,46 @@ void SimplecticEuler::step()
     timer.start();
     for (int s = 0; s < m_nsubsteps; ++s) {
         // Update velocities
-        for (int objId = 0; objId < nObjects; ++objId) {
-            auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
-            const auto &energies = object.energies();
-            for (auto &energy : energies) {
-                const auto nstencils = energy->nStencils();
+        apply_each(
+            [this, dt](auto &objs) {
+                auto l_skew = [](const spg::Vector3 &v) {
+                    spg::Matrix3 vSkew;
+                    vSkew << 0, -v.z(), v.y(), v.z(), 0, -v.x(), -v.y(), v.x(), 0;
+                    return vSkew;
+                };
+                const Vector3 dtg = dt * m_gravity;
+                for (auto &obj : objs) {
+                    const int nElements = static_cast<int>(obj.nElements());
+                    // Accumulate velocities due to external forces
+                    for (int i = 0; i < nElements; ++i) {
+                        auto &velocities = obj.velocities();
+                        velocities[i] += dtg;
+                        if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
+                            obj.omegas()[i] += dt * obj.invInertias()[i] *
+                                               (-obj.omegas()[i].cross(obj.inertias()[i] * obj.omegas()[i]));
+                        }
+                    }
+                    // Accumulate velocities due to external forces
+                    const auto &energies = obj.energies();
+                    for (auto &energy : energies) {
+                        const auto nstencils = energy->nStencils();
 #pragma omp parallel for
-                for (int i = 0; i < nstencils; ++i) {
-                    energy->updateExplicitVelocities(i, object, dt, true);
+                        for (int i = 0; i < nstencils; ++i) {
+                            energy->updateExplicitVelocities(i, obj, dt, true);
+                        }
+                    }
                 }
-            }
-            const auto &invMass = object.invMasses();
-            auto &velocities = object.velocities();
-            const int nParticles = static_cast<int>(object.nElements());
-            const Vector3 dtg = dt * m_gravity;
-            for (int i = 0; i < nParticles; ++i) {
-                if (invMass[i] != 0) {
-                    velocities[i] += dtg;
-                }
-            }
-        }
+            },
+            m_objects);
 
         // Update positions
-        for (int objId = 0; objId < nObjects; ++objId) {
-            auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
-            auto &positions = object.positions();
-            const auto &velocities = object.velocities();
-            const auto &invMass = object.invMasses();
-            const int nParticles = static_cast<int>(object.nElements());
-            for (int i = 0; i < nParticles; ++i) {
-                if (invMass[i] != 0) {
-                    positions[i] = positions[i] + dt * velocities[i];
+        apply_each(
+            [dt](auto &objs) {
+                for (auto &obj : objs) {
+                    obj.integrateState(dt);
                 }
-            }
-        }
+            },
+            m_objects);
     }
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {

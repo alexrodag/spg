@@ -1082,7 +1082,8 @@ int main()
                     dynamic_cast<spg::solver::ImplicitEulerNewtonDx *>(solver.get()) != nullptr ||
                     dynamic_cast<spg::solver::StaticNewton *>(solver.get()) != nullptr ||
                     dynamic_cast<spg::solver::QuasiStaticNewton *>(solver.get()) != nullptr ||
-                    dynamic_cast<spg::solver::QuasiStaticNewtonRobust *>(solver.get()) != nullptr) {
+                    dynamic_cast<spg::solver::QuasiStaticNewtonRobust *>(solver.get()) != nullptr ||
+                    dynamic_cast<spg::solver::SimplecticEuler *>(solver.get()) != nullptr) {
                     float width{1}, height{1}, depth{1}, mass{1};
                     /* solver->addObject(createAnchoredRigidBody(mass, width, height, depth)); */
                     /* solver->addObject(createPulledRigidBody(mass, width, height, depth)); */
@@ -1209,12 +1210,18 @@ int main()
                     for (auto &obj : solver->simObjects()) {
                         obj.scaleMasses(2);
                     }
+                    for (auto &obj : solver->rbGroups()) {
+                        obj.scaleMasses(2);
+                    }
                 }
             }
             ImGui::SameLine();
             if (ImGui::Button("Halve mass")) {
                 for (auto &solver : solvers) {
                     for (auto &obj : solver->simObjects()) {
+                        obj.scaleMasses(0.5);
+                    }
+                    for (auto &obj : solver->rbGroups()) {
                         obj.scaleMasses(0.5);
                     }
                 }
