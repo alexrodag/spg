@@ -148,7 +148,7 @@ public:
                     W(s * s_nDOFs + m) = w;
                 }
             }
-            const EnergyGrad deltaV = W.asDiagonal() * grad * -dt;
+            const EnergyGrad deltaV = W.asDiagonal() * -grad * dt;
             if (!atomicUpdate) {
                 for (int s = 0; s < TstencilSize; ++s) {
                     obj.velocities()[m_stencils[i][s]] += deltaV.template segment<s_nDOFs>(s * s_nDOFs);
