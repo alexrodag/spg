@@ -24,6 +24,11 @@ void BDF2::step()
     }
     const int totalNDOF{accumulatedNDOF};
 
+    if (!std::get<std::vector<RigidBodyGroup>>(m_objects).empty()) {
+        std::cout << "Warning: No support for rigid body with BDF2 solver.\n";
+        return;
+    }
+
     for (int s = 0; s < m_nsubsteps; ++s) {
         // Store state backup
         VectorX x0(totalNDOF);

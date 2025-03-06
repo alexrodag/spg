@@ -10,6 +10,7 @@ public:
     SpringAnchorEnergy() { m_name = "SpringAnchorEnergy"; }
     void addStencil(std::array<int, s_stencilSize> stencil, const Vector3 &anchor, Real stiffness);
     const std::vector<Vector3> &anchors() const { return m_anchor; }
+    void updateAnchor(int i, const Vector3 &anchor) { m_anchor[i] = anchor; }
 
 protected:
     virtual void dEnergy(int i, const SimObject &obj, RealAD1 &dE) const;
