@@ -18,13 +18,13 @@ class XPBD : public BaseSolver
 public:
     XPBD(bool useParallelGaussSeidel = true);
     virtual void step() override;
+    void requirePrecomputationUpdate() { m_parallelGroupsDirty = true; }
 
 protected:
     void computeParallelStencilGroups();
 
     std::vector<std::vector<Vector3>> m_simObjectsOldPos;
-    // TODO: How could this be a more general container of all possible Energy specializations
-    std::unordered_map<Energy<SimObject> *, std::vector<std::vector<int>>> m_stencilGroupsPerEnergy;
+    std::unordered_map<void *, std::vector<std::vector<int>>> m_stencilGroupsPerEnergy;
     bool m_useParallelGaussSeidel;
     bool m_parallelGroupsDirty{true};
 };

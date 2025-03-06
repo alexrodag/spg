@@ -4,6 +4,7 @@
 #include <spg/sim/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
 #include <spg/utils/graphColoring.h>
+#include <spg/utils/functionalUtilities.h>
 
 #include <iostream>
 
@@ -56,7 +57,7 @@ void XPBD::step()
         for (auto &obj : std::get<std::vector<SimObject>>(m_objects)) {
             const auto &energies = obj.energies();
             for (const auto &energy : energies) {
-                if (auto stencilGroupsIt = m_stencilGroupsPerEnergy.find(energy.get());
+                if (auto stencilGroupsIt = m_stencilGroupsPerEnergy.find(static_cast<void *>(energy.get()));
                     stencilGroupsIt != m_stencilGroupsPerEnergy.end()) {
                     // If we have computed stencil groups for the energy, use Parallel Gauss Seidel path, inspired by
                     // ref "Vivace: a Practical Gauss-Seidel Method for Stable Soft Body Dynamics"
@@ -116,17 +117,21 @@ void XPBD::computeParallelStencilGroups()
     Timer timer;
     timer.start();
     m_stencilGroupsPerEnergy.clear();
-    for (auto &obj : std::get<std::vector<SimObject>>(m_objects)) {
-        const auto &energies = obj.energies();
-        for (const auto &energy : energies) {
-            const auto stencilColors = coloring::colorStencils({energy->flatStencils(), energy->stencilSize()});
-            auto &stencilGroups = m_stencilGroupsPerEnergy[energy.get()];
-            for (int i = 0; i < stencilColors.size(); ++i) {
-                stencilGroups.resize(std::max(stencilGroups.size(), static_cast<size_t>(stencilColors[i] + 1)));
-                stencilGroups[stencilColors[i]].push_back(i);
+    apply_each(
+        [this](const auto &objs) {
+            for (const auto &obj : objs) {
+                const auto &energies = obj.energies();
+                for (const auto &energy : energies) {
+                    const auto stencilColors = coloring::colorStencils({energy->flatStencils(), energy->stencilSize()});
+                    auto &stencilGroups = m_stencilGroupsPerEnergy[energy.get()];
+                    for (int i = 0; i < stencilColors.size(); ++i) {
+                        stencilGroups.resize(std::max(stencilGroups.size(), static_cast<size_t>(stencilColors[i] + 1)));
+                        stencilGroups[stencilColors[i]].push_back(i);
+                    }
+                }
             }
-        }
-    }
+        },
+        m_objects);
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {
         std::cout << "XPBD stencil coloring time: " << timer.getMilliseconds() << "ms\n";
