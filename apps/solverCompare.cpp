@@ -649,7 +649,7 @@ std::vector<spg::SimObject> createSceneObjects(SceneType sceneType,
 // Polyscope and custom utils for picking
 /////////////////////////////////////////
 
-std::shared_ptr<spg::SimObject::EnergyT> addPickingEnergy(spg::SimObject &obj, int particleId, const spg::Vector3 &pos)
+std::shared_ptr<spg::SpringAnchorEnergy> addPickingEnergy(spg::SimObject &obj, int particleId, const spg::Vector3 &pos)
 {
     auto springAnchorEnergy = std::make_shared<spg::SpringAnchorEnergy>();
     spg::Real pickingStiffness = 1e4;
@@ -702,7 +702,7 @@ int main()
 
         // Stuff for picking
         std::unordered_map<const polyscope::Structure *, spg::SimObject *> polyscopeToObject;
-        std::shared_ptr<spg::SimObject::EnergyT> currentPickingEnergy;
+        std::shared_ptr<spg::SpringAnchorEnergy> currentPickingEnergy;
         spg::SimObject *currentPickedObject = nullptr;
         int currentPickedParticleId = -1;
         float currentPickedDepth = -1;
@@ -1083,7 +1083,8 @@ int main()
                     dynamic_cast<spg::solver::StaticNewton *>(solver.get()) != nullptr ||
                     dynamic_cast<spg::solver::QuasiStaticNewton *>(solver.get()) != nullptr ||
                     dynamic_cast<spg::solver::QuasiStaticNewtonRobust *>(solver.get()) != nullptr ||
-                    dynamic_cast<spg::solver::SimplecticEuler *>(solver.get()) != nullptr) {
+                    dynamic_cast<spg::solver::SimplecticEuler *>(solver.get()) != nullptr ||
+                    dynamic_cast<spg::solver::BDF2 *>(solver.get()) != nullptr) {
                     float width{1}, height{1}, depth{1}, mass{1};
                     /* solver->addObject(createAnchoredRigidBody(mass, width, height, depth)); */
                     /* solver->addObject(createPulledRigidBody(mass, width, height, depth)); */
@@ -1336,10 +1337,7 @@ int main()
                     spg::Vector3 disp = spg::Vector3(worldPos.x, worldPos.y, worldPos.z) - currentPickedPos;
                     currentPickedPos = {worldPos.x, worldPos.y, worldPos.z};
                     pickAnchorPos += disp;
-                    currentPickedObject->removeEnergy(currentPickingEnergy);
-                    currentPickingEnergy =
-                        addPickingEnergy(*currentPickedObject, currentPickedParticleId, pickAnchorPos);
-                    l_flagSolversForTopologyChanges();
+                    currentPickingEnergy->updateAnchor(0, pickAnchorPos);
                 }
             }
         };
