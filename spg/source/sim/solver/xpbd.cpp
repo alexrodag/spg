@@ -44,9 +44,9 @@ void XPBD::step()
     Real projectionTime = 0;
     Real updateTime = 0;
     for (int s = 0; s < m_nsubsteps; ++s) {
-        // Compute predicted inertial pos
         detailTimer.start();
         int accumulatedNDOF = 0;
+        // Store previous positions
         apply_each(
             [this, &accumulatedNDOF](const auto &objs) {
                 for (const auto &obj : objs) {
@@ -55,19 +55,30 @@ void XPBD::step()
                 }
             },
             m_objects);
-        for (int objId = 0; objId < nObjects; ++objId) {
-            auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
-            auto &positions = object.positions();
-            const auto &velocities = object.velocities();
-            const auto &invMass = object.invMasses();
-            const int nParticles = static_cast<int>(object.nElements());
-            const Vector3 dtdtg = dt * dt * m_gravity;
-            for (int i = 0; i < nParticles; ++i) {
-                if (invMass[i] != 0) {
-                    positions[i] = positions[i] + dt * velocities[i] + dtdtg;
+        // Apply explicit forces to the velocities and compute predicted inertial pos
+        apply_each(
+            [this, dt](auto &objs) {
+                auto l_skew = [](const spg::Vector3 &v) {
+                    spg::Matrix3 vSkew;
+                    vSkew << 0, -v.z(), v.y(), v.z(), 0, -v.x(), -v.y(), v.x(), 0;
+                    return vSkew;
+                };
+                const Vector3 dtg = dt * m_gravity;
+                for (auto &obj : objs) {
+                    const int nElements = static_cast<int>(obj.nElements());
+                    for (int i = 0; i < nElements; ++i) {
+                        // TODO: This can be made more efficient by merging operations, but I leave it as it is for the
+                        // sake of clarity
+                        obj.velocities()[i] += dtg;
+                        if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
+                            obj.omegas()[i] += dt * obj.invInertias()[i] *
+                                               (-l_skew(obj.omegas()[i]) * obj.inertias()[i] * obj.omegas()[i]);
+                        }
+                    }
+                    obj.integrateVelocities(dt);
                 }
-            }
-        }
+            },
+            m_objects);
         detailTimer.stop();
         inertialTime += detailTimer.getMilliseconds();
 
