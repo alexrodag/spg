@@ -79,6 +79,8 @@ protected:
     std::vector<Vector3> m_v;
 
     // Orientation and angular velocity
+    // TODO: In some implementations, theta angle should be between -pi and pi for stability. Check if needed in this
+    // one
     std::vector<Vector3> m_theta;  // Orientation in axis angle.
     std::vector<Vector3> m_thetaInitial;
     std::vector<Vector3> m_theta0;
