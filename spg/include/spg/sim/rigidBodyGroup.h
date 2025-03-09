@@ -17,6 +17,7 @@ public:
     static constexpr int s_nDOFs = 6;
     using EnergyT = Energy<RigidBodyGroup>;
 
+    // TODO: Rename to avoid confusing positions when they are COM only or COM+theta
     const std::vector<Vector3> &positions() const { return m_x; }
     std::vector<Vector3> &positions() { return m_x; }
     const std::vector<Vector3> &positions0() const { return m_x0; }
@@ -29,9 +30,9 @@ public:
     void getVelocities(VectorX &vel, int offsetIndex) const;
     void setPositions(const VectorX &pos, int offsetIndex);
     void setVelocities(const VectorX &vel, int offsetIndex);
-    void integrateState(Real dt);
-    void integrateStateFromDx(const VectorX &dx, const VectorX &oldPos, int offsetIndex, Real invdt);
     void updatePositionsFromDx(const VectorX &dx, int offsetIndex);
+    void integrateVelocities(Real dt);
+    void computeIntegratedVelocities(const VectorX &oldPos, int offsetIndex, Real invdt);
     std::vector<Vector3> &omegas() { return m_omega; }
     const std::vector<Vector3> &omegas() const { return m_omega; }
     const std::vector<Real> &invMasses() const { return m_w; }

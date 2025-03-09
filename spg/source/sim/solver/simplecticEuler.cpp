@@ -56,7 +56,7 @@ void SimplecticEuler::step()
         apply_each(
             [dt](auto &objs) {
                 for (auto &obj : objs) {
-                    obj.integrateState(dt);
+                    obj.integrateVelocities(dt);
                 }
             },
             m_objects);

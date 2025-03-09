@@ -65,24 +65,25 @@ void ImplicitEulerBase::setObjectsVelocities(const VectorX &vel)
         m_objects);
 }
 
-void ImplicitEulerBase::integrateObjectsState(const Real dt)
+void ImplicitEulerBase::integrateObjectsVelocities(const Real dt)
 {
     apply_each(
         [dt](auto &objs) {
             for (auto &obj : objs) {
-                obj.integrateState(dt);
+                obj.integrateVelocities(dt);
             }
         },
         m_objects);
 }
 
-void ImplicitEulerBase::integrateObjectsStateFromDx(const VectorX &dx, const VectorX &oldPos, const Real invdt)
+void ImplicitEulerBase::integrateObjectsVelocitiesFromDx(const VectorX &dx, const VectorX &oldPos, const Real invdt)
 {
     int accumulatedNDOF = 0;
     apply_each(
         [&accumulatedNDOF, &dx, &oldPos, invdt](auto &objs) {
             for (auto &obj : objs) {
-                obj.integrateStateFromDx(dx, oldPos, accumulatedNDOF, invdt);
+                obj.updatePositionsFromDx(dx, accumulatedNDOF);
+                obj.computeIntegratedVelocities(oldPos, accumulatedNDOF, invdt);
                 accumulatedNDOF += obj.nDOF();
             }
         },
