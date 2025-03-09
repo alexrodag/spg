@@ -21,8 +21,19 @@ void XPBD::step()
         m_parallelGroupsDirty = false;
     }
     const Real dt = m_dtStep / m_nsubsteps;
+    const Real invdt = 1 / dt;
+    // Compute total DOFs
+    int accumulatedNDOF = 0;
+    apply_each(
+        [&accumulatedNDOF](const auto &objs) {
+            for (const auto &obj : objs) {
+                accumulatedNDOF += obj.nDOF();
+            }
+        },
+        m_objects);
+    const int totalNDOF{accumulatedNDOF};
+    m_xOld.resize(totalNDOF);
     const int nObjects = static_cast<int>(std::get<std::vector<SimObject>>(m_objects).size());
-    m_simObjectsOldPos.resize(nObjects);
     if (m_verbosity == Verbosity::Performance) {
         std::cout << "XPBD step\n";
     }
@@ -35,10 +46,18 @@ void XPBD::step()
     for (int s = 0; s < m_nsubsteps; ++s) {
         // Compute predicted inertial pos
         detailTimer.start();
+        int accumulatedNDOF = 0;
+        apply_each(
+            [this, &accumulatedNDOF](const auto &objs) {
+                for (const auto &obj : objs) {
+                    obj.getPositions(m_xOld, accumulatedNDOF);
+                    accumulatedNDOF += obj.nDOF();
+                }
+            },
+            m_objects);
         for (int objId = 0; objId < nObjects; ++objId) {
             auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
             auto &positions = object.positions();
-            m_simObjectsOldPos[objId] = positions;
             const auto &velocities = object.velocities();
             const auto &invMass = object.invMasses();
             const int nParticles = static_cast<int>(object.nElements());
@@ -82,21 +101,15 @@ void XPBD::step()
 
         // Update velocities
         detailTimer.start();
-        for (int objId = 0; objId < nObjects; ++objId) {
-            auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
-            const auto &positions = object.positions();
-            const auto &oldPositions = m_simObjectsOldPos[objId];
-            auto &velocities = object.velocities();
-            const int nParticles = static_cast<int>(object.nElements());
-            for (int i = 0; i < nParticles; ++i) {
-                velocities[i] = (positions[i] - oldPositions[i]) / dt;
-            }
-            // basic damping
-            // TODO: Change for some unified damping across solvers
-            /* for (int i = 0; i < nParticles; ++i) {
-                velocities[i] = velocities[i] * 0.999;
-            } */
-        }
+        accumulatedNDOF = 0;
+        apply_each(
+            [this, &accumulatedNDOF, invdt](auto &objs) {
+                for (auto &obj : objs) {
+                    obj.computeIntegratedVelocities(m_xOld, accumulatedNDOF, invdt);
+                    accumulatedNDOF += obj.nDOF();
+                }
+            },
+            m_objects);
         detailTimer.stop();
         updateTime += detailTimer.getMilliseconds();
     }

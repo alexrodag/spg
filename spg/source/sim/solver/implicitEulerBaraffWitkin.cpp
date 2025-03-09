@@ -52,7 +52,7 @@ void ImplicitEulerBaraffWitkin::step()
 
         // Update objects state
         setObjectsVelocities(v0 + dv);
-        integrateObjectsState(dt);
+        integrateObjectsVelocities(dt);
     }
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {

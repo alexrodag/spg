@@ -50,7 +50,7 @@ void ImplicitEulerNewtonRobust::step()
 
         int currentNewtonIterations = 0;
         // Set initial guess as inertial position
-        integrateObjectsState(dt);
+        integrateObjectsVelocities(dt);
         VectorX vi = v0;
         do {
             // Compute forces, mass matrix and stiffness matrix
@@ -79,7 +79,7 @@ void ImplicitEulerNewtonRobust::step()
                 const VectorX v = vi + dv * alpha;
                 setObjectsVelocities(v);
                 setObjectsPositions(x0);
-                integrateObjectsState(dt);
+                integrateObjectsVelocities(dt);
                 VectorX x(totalNDOF);
                 getSystemPositions(x);
                 // compute new RHS

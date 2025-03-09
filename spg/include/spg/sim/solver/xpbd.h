@@ -23,7 +23,7 @@ public:
 protected:
     void computeParallelStencilGroups();
 
-    std::vector<std::vector<Vector3>> m_simObjectsOldPos;
+    VectorX m_xOld;
     std::unordered_map<void *, std::vector<std::vector<int>>> m_stencilGroupsPerEnergy;
     bool m_useParallelGaussSeidel;
     bool m_parallelGroupsDirty{true};
