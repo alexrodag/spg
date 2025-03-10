@@ -84,29 +84,33 @@ void XPBD::step()
 
         // Project constraints positions
         detailTimer.start();
-        for (auto &obj : std::get<std::vector<SimObject>>(m_objects)) {
-            const auto &energies = obj.energies();
-            for (const auto &energy : energies) {
-                if (auto stencilGroupsIt = m_stencilGroupsPerEnergy.find(static_cast<void *>(energy.get()));
-                    stencilGroupsIt != m_stencilGroupsPerEnergy.end()) {
-                    // If we have computed stencil groups for the energy, use Parallel Gauss Seidel path, inspired by
-                    // ref "Vivace: a Practical Gauss-Seidel Method for Stable Soft Body Dynamics"
-                    for (const auto &group : stencilGroupsIt->second) {
-                        const int groupSize = static_cast<int>(group.size());
+        apply_each(
+            [this, dt](auto &objs) {
+                for (auto &obj : objs) {
+                    const auto &energies = obj.energies();
+                    for (const auto &energy : energies) {
+                        if (auto stencilGroupsIt = m_stencilGroupsPerEnergy.find(static_cast<void *>(energy.get()));
+                            stencilGroupsIt != m_stencilGroupsPerEnergy.end()) {
+                            // If we have computed stencil groups for the energy, use Parallel Gauss Seidel path,
+                            // inspired by ref "Vivace: a Practical Gauss-Seidel Method for Stable Soft Body Dynamics"
+                            for (const auto &group : stencilGroupsIt->second) {
+                                const int groupSize = static_cast<int>(group.size());
 #pragma omp parallel for
-                        for (int i = 0; i < groupSize; ++i) {
-                            energy->projectPosition(group[i], obj, dt);
+                                for (int i = 0; i < groupSize; ++i) {
+                                    energy->projectPosition(group[i], obj, dt);
+                                }
+                            }
+                        } else {
+                            // Serial Gauss Seidel path otherwise
+                            const auto nstencils = energy->nStencils();
+                            for (int i = 0; i < nstencils; ++i) {
+                                energy->projectPosition(i, obj, dt);
+                            }
                         }
                     }
-                } else {
-                    // Serial Gauss Seidel path otherwise
-                    const auto nstencils = energy->nStencils();
-                    for (int i = 0; i < nstencils; ++i) {
-                        energy->projectPosition(i, obj, dt);
-                    }
                 }
-            }
-        }
+            },
+            m_objects);
         detailTimer.stop();
         projectionTime += detailTimer.getMilliseconds();
 
