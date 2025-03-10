@@ -40,6 +40,11 @@ void SimObject::setVelocities(const VectorX &vel, int offsetIndex)
     }
 }
 
+void SimObject::updateElementPositionFromDx(const Vector3 &dx, int elementId)
+{
+    m_x[elementId] += dx;
+}
+
 void SimObject::updatePositionsFromDx(const VectorX &dx, int offsetIndex)
 {
     const int nparticles = nElements();

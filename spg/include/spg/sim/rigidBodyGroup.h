@@ -30,6 +30,7 @@ public:
     void getVelocities(VectorX &vel, int offsetIndex) const;
     void setPositions(const VectorX &pos, int offsetIndex);
     void setVelocities(const VectorX &vel, int offsetIndex);
+    void updateElementPositionFromDx(const Vector<6> &dx, int elementId);
     void updatePositionsFromDx(const VectorX &dx, int offsetIndex);
     void integrateVelocities(Real dt);
     void computeIntegratedVelocities(const VectorX &oldPos, int offsetIndex, Real invdt);

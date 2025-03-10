@@ -33,7 +33,6 @@ void XPBD::step()
         m_objects);
     const int totalNDOF{accumulatedNDOF};
     m_xOld.resize(totalNDOF);
-    const int nObjects = static_cast<int>(std::get<std::vector<SimObject>>(m_objects).size());
     if (m_verbosity == Verbosity::Performance) {
         std::cout << "XPBD step\n";
     }

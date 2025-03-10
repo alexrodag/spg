@@ -113,29 +113,39 @@ public:
 
     virtual void projectPosition(int i, TSimObject &obj, Real dt) const
     {
-        if constexpr (TSimObject::s_nDOFs == 3) {
-            // XPBD projection method. Constraints are solved in coupled fashion (ref: "Parallel Block Neo-Hookean XPBD
-            // using Graph Clustering"). When TnConstraints == 1, it reduces to base XPBD formulation
-            constexpr Real smallEpsilon{static_cast<Real>(1e-10)};
-            const auto [C, grad] = constraintsAndGradient(i, obj);
-            VectorT<Real, TstencilSize * s_nDOFs> W;
-            for (int s = 0; s < TstencilSize; ++s) {
-                const auto w = obj.invMasses()[m_stencils[i][s]];
-                for (int m = 0; m < s_nDOFs; ++m) {
-                    W(s * s_nDOFs + m) = w;
-                }
+        // XPBD projection method. Constraints are solved in coupled fashion (ref: "Parallel Block Neo-Hookean XPBD
+        // using Graph Clustering"). When TnConstraints == 1, it reduces to base XPBD formulation
+        constexpr Real smallEpsilon{static_cast<Real>(1e-10)};
+        const auto [C, grad] = constraintsAndGradient(i, obj);
+        // TODO: Hardcoded linear vs angular dof sizes to 3. Refactor.
+        // TODO: Can be made more efficient by separating the computation of linear and angular parts and
+        // treating the linear with an "asDiagonal" vector. Profile and see if worth the change
+        MatrixT<Real, TstencilSize * s_nDOFs> W;
+        W.setZero();
+        for (int s = 0; s < TstencilSize; ++s) {
+            const auto w = obj.invMasses()[m_stencils[i][s]];
+            for (int m = 0; m < 3; ++m) {
+                const auto diagonalIndex = s * s_nDOFs + m;
+                W(diagonalIndex, diagonalIndex) = w;
             }
-            const ConstraintsGrad WgradC = W.asDiagonal() * grad;
-            const auto A = grad.transpose() * WgradC + m_effectiveCompliance[i] / (dt * dt) +
-                           smallEpsilon * StiffnessMat::Identity();
-            // Note: simplified numerator (ref: "Small Steps in Physics Simulation"). Doing a single iteration per step
-            // allows to make this simplification but more importantly, maintains the accuracy of the solver, making it
-            // converge to the real solution (see "XPBD: Position-Based Simulation of Compliant Constrained Dynamics")
-            const Constraints deltaLambda = -A.inverse() * C;
-            const auto deltaX = (WgradC * deltaLambda).eval();
-            for (int s = 0; s < TstencilSize; ++s) {
-                obj.positions()[m_stencils[i][s]] += deltaX.template segment<s_nDOFs>(s * s_nDOFs);
+            if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
+                const auto diagonalIndex = s * s_nDOFs + 3;
+                W.block<3, 3>(diagonalIndex, diagonalIndex) = obj.invInertias()[m_stencils[i][s]];
             }
+        }
+        const ConstraintsGrad WgradC = W * grad;
+        const auto A =
+            grad.transpose() * WgradC + m_effectiveCompliance[i] / (dt * dt) + smallEpsilon * StiffnessMat::Identity();
+        // Note: simplified numerator (ref: "Small Steps in Physics Simulation"). Doing a single iteration per step
+        // allows to make this simplification but more importantly, maintains the accuracy of the solver, making it
+        // converge to the real solution (see "XPBD: Position-Based Simulation of Compliant Constrained Dynamics")
+        const Constraints deltaLambda = -A.inverse() * C;
+        const auto deltaX = (WgradC * deltaLambda).eval();
+        for (int s = 0; s < TstencilSize; ++s) {
+            // This tipically ammounts to simply adding the deltas, but in some cases, such as the current rigid body
+            // implementation, the computation is more involved.
+            //  TODO: Maybe could be sped up using Eigen Refs. Profile.
+            obj.updateElementPositionFromDx(deltaX.template segment<s_nDOFs>(s * s_nDOFs), m_stencils[i][s]);
         }
     }
 
