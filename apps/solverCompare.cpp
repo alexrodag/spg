@@ -1084,7 +1084,8 @@ int main()
                     dynamic_cast<spg::solver::QuasiStaticNewton *>(solver.get()) != nullptr ||
                     dynamic_cast<spg::solver::QuasiStaticNewtonRobust *>(solver.get()) != nullptr ||
                     dynamic_cast<spg::solver::SimplecticEuler *>(solver.get()) != nullptr ||
-                    dynamic_cast<spg::solver::BDF2 *>(solver.get()) != nullptr) {
+                    dynamic_cast<spg::solver::BDF2 *>(solver.get()) != nullptr ||
+                    dynamic_cast<spg::solver::XPBD *>(solver.get()) != nullptr) {
                     float width{1}, height{1}, depth{1}, mass{1};
                     /* solver->addObject(createAnchoredRigidBody(mass, width, height, depth)); */
                     /* solver->addObject(createPulledRigidBody(mass, width, height, depth)); */

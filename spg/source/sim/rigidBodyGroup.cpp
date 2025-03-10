@@ -59,6 +59,21 @@ void RigidBodyGroup::setVelocities(const VectorX &vel, int offsetIndex)
     }
 }
 
+void RigidBodyGroup::updateElementPositionFromDx(const Vector<6> &dx, int elementId)
+{
+    // Linear part
+    m_x[elementId] += dx.segment<3>(0);
+    // Angular part
+    // Incremental compositions of the rotation
+    if (const Real dxNorm = dx.segment<3>(3).norm(); dxNorm != 0) {
+        m_rotationMatrix[elementId] =
+            Eigen::AngleAxis<spg::Real>(dxNorm, dx.segment<3>(3) / dxNorm).toRotationMatrix() *
+            m_rotationMatrix[elementId];
+    }
+    updateTheta(elementId);
+    updateInertia(elementId);
+}
+
 void RigidBodyGroup::updatePositionsFromDx(const VectorX &dx, int offsetIndex)
 {
     const int nbodies = nElements();
