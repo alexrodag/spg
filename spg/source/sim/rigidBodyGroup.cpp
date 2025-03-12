@@ -21,7 +21,7 @@ namespace spg
 
 void RigidBodyGroup::getPositions(VectorX &pos, int offsetIndex) const
 {
-    const int nbodies = nElements();
+    const int nbodies = size();
     for (int bodyIdx = 0; bodyIdx < nbodies; ++bodyIdx) {
         const int startOffset = bodyIdx * 6 + offsetIndex;
         pos.segment<3>(startOffset) = m_x[bodyIdx];
@@ -31,7 +31,7 @@ void RigidBodyGroup::getPositions(VectorX &pos, int offsetIndex) const
 
 void RigidBodyGroup::getVelocities(VectorX &vel, int offsetIndex) const
 {
-    const int nbodies = nElements();
+    const int nbodies = size();
     for (int bodyIdx = 0; bodyIdx < nbodies; ++bodyIdx) {
         const int startOffset = bodyIdx * 6 + offsetIndex;
         vel.segment<3>(startOffset) = m_v[bodyIdx];
@@ -41,7 +41,7 @@ void RigidBodyGroup::getVelocities(VectorX &vel, int offsetIndex) const
 
 void RigidBodyGroup::setPositions(const VectorX &pos, int offsetIndex)
 {
-    const int nbodies = nElements();
+    const int nbodies = size();
     for (int bodyIdx = 0; bodyIdx < nbodies; ++bodyIdx) {
         const int startOffset = bodyIdx * 6 + offsetIndex;
         m_x[bodyIdx] = pos.segment<3>(startOffset);
@@ -51,7 +51,7 @@ void RigidBodyGroup::setPositions(const VectorX &pos, int offsetIndex)
 
 void RigidBodyGroup::setVelocities(const VectorX &vel, int offsetIndex)
 {
-    const int nbodies = nElements();
+    const int nbodies = size();
     for (int bodyIdx = 0; bodyIdx < nbodies; ++bodyIdx) {
         const int startOffset = bodyIdx * 6 + offsetIndex;
         m_v[bodyIdx] = vel.segment<3>(startOffset);
@@ -76,7 +76,7 @@ void RigidBodyGroup::updateElementPositionFromDx(const Vector<6> &dx, int elemen
 
 void RigidBodyGroup::updatePositionsFromDx(const VectorX &dx, int offsetIndex)
 {
-    const int nbodies = nElements();
+    const int nbodies = size();
     for (int bodyIdx = 0; bodyIdx < nbodies; ++bodyIdx) {
         const int startOffset = bodyIdx * 6 + offsetIndex;
         // Linear part
@@ -95,7 +95,7 @@ void RigidBodyGroup::updatePositionsFromDx(const VectorX &dx, int offsetIndex)
 
 void RigidBodyGroup::integrateVelocities(Real dt)
 {
-    const int nbodies = nElements();
+    const int nbodies = size();
     for (int bodyIdx = 0; bodyIdx < nbodies; ++bodyIdx) {
         // Linear part
         m_x[bodyIdx] += m_v[bodyIdx] * dt;
@@ -113,7 +113,7 @@ void RigidBodyGroup::integrateVelocities(Real dt)
 
 void RigidBodyGroup::computeIntegratedVelocities(const VectorX &oldPos, int offsetIndex, Real invdt)
 {
-    const int nbodies = nElements();
+    const int nbodies = size();
     for (int bodyIdx = 0; bodyIdx < nbodies; ++bodyIdx) {
         const int startOffset = bodyIdx * 6 + offsetIndex;
         // Linear part
@@ -200,7 +200,7 @@ void RigidBodyGroup::updateInertia(const int i)
 
 void RigidBodyGroup::updateInertias()
 {
-    for (int i = 0; i < nElements(); ++i) {
+    for (int i = 0; i < size(); ++i) {
         updateInertia(i);
     }
 }
@@ -212,7 +212,7 @@ void RigidBodyGroup::updateRotationMatrix(const int i)
 
 void RigidBodyGroup::updateRotationMatrices()
 {
-    for (int i = 0; i < nElements(); ++i) {
+    for (int i = 0; i < size(); ++i) {
         updateRotationMatrix(i);
     }
 }
@@ -224,7 +224,7 @@ void RigidBodyGroup::updateTheta(const int i)
 
 void RigidBodyGroup::updateThetas()
 {
-    for (int i = 0; i < nElements(); ++i) {
+    for (int i = 0; i < size(); ++i) {
         updateTheta(i);
     }
 }

@@ -48,7 +48,7 @@ public:
 
     // TODO: May be needed to have two versions, one for generealized coordinates and other for velocities
     int nDOF() const { return static_cast<int>(m_x.size() * 3 + m_theta.size() * 3); }
-    int nElements() const { return static_cast<int>(m_x.size()); }
+    int size() const { return static_cast<int>(m_x.size()); }
 
     void addBody(const Vector3 &p,
                  const Vector3 &p0,

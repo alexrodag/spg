@@ -119,8 +119,8 @@ void ImplicitEulerBase::getSystemForce(VectorX &f) const
 
             for (const auto &obj : objs) {
                 const auto &masses = obj.masses();
-                const int nElements = static_cast<int>(obj.nElements());
-                for (int i = 0; i < nElements; ++i) {
+                const int nPrimitives = static_cast<int>(obj.size());
+                for (int i = 0; i < nPrimitives; ++i) {
                     const Real mass = masses[i];
                     f.segment<3>(i * obj.s_nDOFs + accumulatedNDOF) += m_gravity * mass;
                     if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
@@ -160,9 +160,9 @@ void ImplicitEulerBase::getSystemMassMatrix(SparseMatrix &M) const
     m_tripletHolder.clear();
     apply_each(
         [this, &accumulatedNDOF, &M](auto &objs) {
-            for (auto &obj : objs) {  // TODO: CHANGE TO AUTO
-                const int nElements = obj.nElements();
-                for (int i = 0; i < nElements; ++i) {
+            for (auto &obj : objs) {
+                const int nPrimitives = obj.size();
+                for (int i = 0; i < nPrimitives; ++i) {
                     for (int j = 0; j < 3; ++j) {
                         const int diagIndex = i * obj.s_nDOFs + j + accumulatedNDOF;
                         m_tripletHolder.emplace_back(diagIndex, diagIndex, obj.masses()[i]);

@@ -29,9 +29,9 @@ void SimplecticEuler::step()
                 };
                 const Vector3 dtg = dt * m_gravity;
                 for (auto &obj : objs) {
-                    const int nElements = static_cast<int>(obj.nElements());
+                    const int nPrimitives = static_cast<int>(obj.size());
                     // Accumulate velocities due to external forces
-                    for (int i = 0; i < nElements; ++i) {
+                    for (int i = 0; i < nPrimitives; ++i) {
                         auto &velocities = obj.velocities();
                         velocities[i] += dtg;
                         if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {

@@ -35,7 +35,7 @@ public:
     std::vector<std::shared_ptr<EnergyT>> &energies() { return m_energies; }
     const std::vector<std::shared_ptr<EnergyT>> &energies() const { return m_energies; }
     int nDOF() const { return static_cast<int>(m_x.size()) * 3; }
-    int nElements() const { return static_cast<int>(m_x.size()); }
+    int size() const { return static_cast<int>(m_x.size()); }
 
     void addParticle(const Vector3 &position, const Vector3 &position0, Real mass);
     void addEnergy(std::shared_ptr<EnergyT> energy);
