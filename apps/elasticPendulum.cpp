@@ -19,7 +19,7 @@ int main()
     obj.addEnergy(springAnchorEnergy);
     obj.addEnergy(springEnergy);
     spg::solver::ImplicitEulerBaraffWitkin solver;
-    solver.addSimObject(obj);
+    solver.addObject(obj);
     const float dt = 0.1f;
     solver.setDt(dt);
     float time = 0;

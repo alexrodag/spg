@@ -64,8 +64,8 @@ void XPBD::step()
                 };
                 const Vector3 dtg = dt * m_gravity;
                 for (auto &obj : objs) {
-                    const int nElements = static_cast<int>(obj.nElements());
-                    for (int i = 0; i < nElements; ++i) {
+                    const int nPrimitives = static_cast<int>(obj.size());
+                    for (int i = 0; i < nPrimitives; ++i) {
                         // TODO: This can be made more efficient by merging operations, but I leave it as it is for the
                         // sake of clarity
                         obj.velocities()[i] += dtg;

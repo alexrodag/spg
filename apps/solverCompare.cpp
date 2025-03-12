@@ -807,7 +807,7 @@ int main()
                     }
                     for (int i = 0; i < solver->rbGroups().size(); ++i) {
                         auto &rbGroup = solver->rbGroups()[i];
-                        for (int j = 0; j < rbGroup.nElements(); ++j) {
+                        for (int j = 0; j < rbGroup.size(); ++j) {
                             auto *sm = polyscope::getSurfaceMesh("solver" + std::to_string(solverId) + "rbGroup" +
                                                                  std::to_string(i) + "rb" + std::to_string(j));
                             const auto &pos = rbGroup.positions()[j];
@@ -942,7 +942,7 @@ int main()
                 }
                 for (int i = 0; i < solver->rbGroups().size(); ++i) {
                     const spg::RigidBodyGroup &rbGroup = solver->rbGroups()[i];
-                    for (int j = 0; j < rbGroup.nElements(); ++j) {
+                    for (int j = 0; j < rbGroup.size(); ++j) {
                         polyscope::SurfaceMesh *sm =
                             polyscope::registerSurfaceMesh("solver" + std::to_string(solverId) + "rbGroup" +
                                                                std::to_string(i) + "rb" + std::to_string(j),
@@ -1020,7 +1020,7 @@ int main()
                 }
                 for (int i = 0; i < solver->rbGroups().size(); ++i) {
                     auto &rbGroup = solver->rbGroups()[i];
-                    for (int j = 0; j < rbGroup.nElements(); ++j) {
+                    for (int j = 0; j < rbGroup.size(); ++j) {
                         polyscope::removeSurfaceMesh("solver" + std::to_string(solverId) + "rbGroup" +
                                                      std::to_string(i) + "rb" + std::to_string(j));
                         polyscope::removeCurveNetwork("solver" + std::to_string(i) + "rbGroup" + std::to_string(j) +

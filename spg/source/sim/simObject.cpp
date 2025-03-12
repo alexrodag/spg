@@ -6,7 +6,7 @@ namespace spg
 
 void SimObject::getPositions(VectorX &pos, int offsetIndex) const
 {
-    const int nparticles = nElements();
+    const int nparticles = size();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
         const int startOffset = particleIdx * 3 + offsetIndex;
         pos.segment<3>(startOffset) = m_x[particleIdx];
@@ -15,7 +15,7 @@ void SimObject::getPositions(VectorX &pos, int offsetIndex) const
 
 void SimObject::getVelocities(VectorX &vel, int offsetIndex) const
 {
-    const int nparticles = nElements();
+    const int nparticles = size();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
         const int startOffset = particleIdx * 3 + offsetIndex;
         vel.segment<3>(startOffset) = m_v[particleIdx];
@@ -24,7 +24,7 @@ void SimObject::getVelocities(VectorX &vel, int offsetIndex) const
 
 void SimObject::setPositions(const VectorX &pos, int offsetIndex)
 {
-    const int nparticles = nElements();
+    const int nparticles = size();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
         const int startOffset = particleIdx * 3 + offsetIndex;
         m_x[particleIdx] = pos.segment<3>(startOffset);
@@ -33,7 +33,7 @@ void SimObject::setPositions(const VectorX &pos, int offsetIndex)
 
 void SimObject::setVelocities(const VectorX &vel, int offsetIndex)
 {
-    const int nparticles = nElements();
+    const int nparticles = size();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
         const int startOffset = particleIdx * 3 + offsetIndex;
         m_v[particleIdx] = vel.segment<3>(startOffset);
@@ -47,7 +47,7 @@ void SimObject::updateElementPositionFromDx(const Vector3 &dx, int elementId)
 
 void SimObject::updatePositionsFromDx(const VectorX &dx, int offsetIndex)
 {
-    const int nparticles = nElements();
+    const int nparticles = size();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
         const int startOffset = particleIdx * 3 + offsetIndex;
         m_x[particleIdx] += dx.segment<3>(startOffset);
@@ -56,7 +56,7 @@ void SimObject::updatePositionsFromDx(const VectorX &dx, int offsetIndex)
 
 void SimObject::integrateVelocities(Real dt)
 {
-    const int nparticles = nElements();
+    const int nparticles = size();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
         m_x[particleIdx] += m_v[particleIdx] * dt;
     }
@@ -64,7 +64,7 @@ void SimObject::integrateVelocities(Real dt)
 
 void SimObject::computeIntegratedVelocities(const VectorX &oldPos, int offsetIndex, Real invdt)
 {
-    const int nparticles = nElements();
+    const int nparticles = size();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
         const int startOffset = particleIdx * 3 + offsetIndex;
         m_v[particleIdx] = (m_x[particleIdx] - oldPos.segment<3>(startOffset)) * invdt;
