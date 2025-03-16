@@ -13,6 +13,13 @@ void BaseSolver::addObject(const TObj &object)
     std::get<std::vector<TObj>>(m_objects).push_back(object);
 }
 
+int BaseSolver::numSimObjects()
+{
+    int nObjects = 0;
+    apply_each([&nObjects](auto &objs) { nObjects += objs.size(); }, m_objects);
+    return nObjects;
+}
+
 void BaseSolver::reset()
 {
     apply_each(

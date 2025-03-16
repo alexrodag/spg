@@ -11,7 +11,7 @@ template <class TSimObject>
 class Energy;
 
 // TODO templatize DOFs per particle
-class SimObject  // TODO: Rename to Particles or something like that
+class SimObject  // TODO: Rename to ParticleGroup or something like that
 {
 public:
     static constexpr int s_nDOFs = 3;
