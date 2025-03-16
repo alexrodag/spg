@@ -22,6 +22,7 @@ public:
     const std::vector<SimObject> &simObjects() const { return std::get<std::vector<SimObject>>(m_objects); }
     std::vector<RigidBodyGroup> &rbGroups() { return std::get<std::vector<RigidBodyGroup>>(m_objects); }
     const std::vector<RigidBodyGroup> &rbGroups() const { return std::get<std::vector<RigidBodyGroup>>(m_objects); }
+    int numSimObjects();
     void setDt(Real dt) { m_dtStep = dt; }
     Real dt() { return m_dtStep; }
     void setNumSubsteps(int nsubsteps) { m_nsubsteps = nsubsteps; }

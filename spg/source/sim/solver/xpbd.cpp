@@ -66,8 +66,8 @@ void XPBD::step()
                 for (auto &obj : objs) {
                     const int nPrimitives = static_cast<int>(obj.size());
                     for (int i = 0; i < nPrimitives; ++i) {
-                        // TODO: This can be made more efficient by merging operations, but I leave it as it is for the
-                        // sake of clarity
+                        // TODO: This can be made more efficient by merging operations and bypassing the velocity, but I
+                        // leave it as it is for the sake of clarity
                         obj.velocities()[i] += dtg;
                         if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
                             obj.omegas()[i] += dt * obj.invInertias()[i] *
