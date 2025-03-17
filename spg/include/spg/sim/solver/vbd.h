@@ -12,6 +12,7 @@ namespace solver
 {
 // Parallel CPU version of the VBD solver by Chen 2024
 // (ref: "Vertex Block Descent")
+// Note: When dealing with rigid bodies, the logic of a "vertex" extends to a rigid body
 class VBD : public BaseSolver
 {
     using ElementEntry = Int2;  // An entry contains the stencil Idx and vertex Idx inside that stencil
@@ -20,11 +21,11 @@ class VBD : public BaseSolver
     using ElementsPerVertex = std::vector<ElementEntriesPerEnergy>;
 
 public:
-    enum class InitialGuessType { Inertial, InertialWithAcceleration, Adaptive };
+    enum class InitialGuessType { InertialWithAcceleration };
     virtual void step() override;
     virtual void reset() override;
     void setInitialGuessType(const InitialGuessType type) { m_initialGuessType = type; }
-    void requirePrecomputationUpdate();
+    void requirePrecomputationUpdate() { m_precomputationUpdateRequired = true; }
 
 protected:
     void computeParallelVertexGroups();
@@ -36,8 +37,9 @@ protected:
     std::vector<ElementsPerVertex> m_simObjectsElementsPerVertex;
     bool m_precomputationUpdateRequired{true};
 
-    std::vector<std::vector<Vector3>> m_simObjPrevStepVelocities;
     // Member structures to avoid unrequired memory reallocations
+    VectorX m_xOld;
+    VectorX m_xInertial;
     std::vector<std::vector<Vector3>> m_simObjectsOldPos;
     std::vector<std::vector<Vector3>> m_simObjectsInertialPositions;
 };

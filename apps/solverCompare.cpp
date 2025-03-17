@@ -594,17 +594,13 @@ spg::RigidBodyGroup createRigidBodyChain(const spg::Real mass,
     }
 
     rbGroup.addEnergy(springAnchorEnergy);
+    if (nBodies > 1) {
     rbGroup.addEnergy(springEnergy);
+    }
     return rbGroup;
 }
 
-enum class SceneType {
-    Cloth,
-    Rope,
-    SpringBeam,
-    FemBeam,
-
-};
+enum class SceneType { Cloth, Rope, SpringBeam, FemBeam, RBChain, AnchoredRB, PulledRB };
 
 std::vector<spg::SimObject> createSceneObjects(SceneType sceneType,
                                                MembraneType membraneType,
@@ -642,7 +638,22 @@ std::vector<spg::SimObject> createSceneObjects(SceneType sceneType,
                                       0.2F,
                                       femType)};
     }
-    return {};
+    throw std::runtime_error("Invalid particle group scene");
+}
+
+std::vector<spg::RigidBodyGroup> createRigidBodySceneObjects(SceneType sceneType, int resolutionMultiplier)
+{
+    float width{1}, height{1}, depth{1}, mass{1};
+    if (sceneType == SceneType::RBChain) {
+        return {createRigidBodyChain(mass, width, height, depth, 1 * resolutionMultiplier)};
+    }
+    if (sceneType == SceneType::AnchoredRB) {
+        return {createAnchoredRigidBody(mass, width, height, depth)};
+    }
+    if (sceneType == SceneType::PulledRB) {
+        return {createPulledRigidBody(mass, width, height, depth)};
+    }
+    throw std::runtime_error("Invalid rigid body group scene");
 }
 
 /////////////////////////////////////////
@@ -731,12 +742,16 @@ int main()
         }
 
         // Scene selection stuff
-        const char *sceneTypeNames[] = {"Spring beam", "Cloth", "Rope", "Fem beam"};
+        const char *sceneTypeNames[] = {
+            "Spring beam", "Cloth", "Rope", "Fem beam", "RB chain", "Anchored RB", "Pulled RB"};
         std::map<int, SceneType> sceneTypeMap;
         sceneTypeMap[0] = SceneType::SpringBeam;
         sceneTypeMap[1] = SceneType::Cloth;
         sceneTypeMap[2] = SceneType::Rope;
         sceneTypeMap[3] = SceneType::FemBeam;
+        sceneTypeMap[4] = SceneType::RBChain;
+        sceneTypeMap[5] = SceneType::AnchoredRB;
+        sceneTypeMap[6] = SceneType::PulledRB;
         int sceneId{0};
         SceneType sceneType = sceneTypeMap[sceneId];
 
@@ -1023,10 +1038,10 @@ int main()
                     for (int j = 0; j < rbGroup.size(); ++j) {
                         polyscope::removeSurfaceMesh("solver" + std::to_string(solverId) + "rbGroup" +
                                                      std::to_string(i) + "rb" + std::to_string(j));
-                        polyscope::removeCurveNetwork("solver" + std::to_string(i) + "rbGroup" + std::to_string(j) +
-                                                      "springs");
-                        polyscope::removeCurveNetwork("solver" + std::to_string(i) + "rbGroup" + std::to_string(j) +
-                                                      "anchor-springs");
+                        polyscope::removeCurveNetwork("solver" + std::to_string(solverId) + "rbGroup" +
+                                                      std::to_string(j) + "springs");
+                        polyscope::removeCurveNetwork("solver" + std::to_string(solverId) + "rbGroup" +
+                                                      std::to_string(j) + "anchor-springs");
                     }
                 }
             };
@@ -1036,10 +1051,18 @@ int main()
                 solver->setNumSubsteps(1);
                 solver->setVerbosity(verbosity);
                 solverSubsteps.push_back(1);
+                if (sceneType != SceneType::RBChain && sceneType != SceneType::AnchoredRB &&
+                    sceneType != SceneType::PulledRB) {
                 const auto objects = createSceneObjects(
                     sceneType, membraneType, bendingType, springType, femType, simObjectResolutionMultiplier);
                 for (const auto &object : objects) {
                     solver->addObject(object);
+                    }
+                } else {
+                    const auto objects = createRigidBodySceneObjects(sceneType, simObjectResolutionMultiplier);
+                    for (const auto &object : objects) {
+                        solver->addObject(object);
+                    }
                 }
                 solver->setDt(dt);
                 l_registerSolver(solver, static_cast<int>(solvers.size()) - 1);
@@ -1075,25 +1098,15 @@ int main()
                 }
                 solver->setNumSubsteps(solverSubsteps[solverId]);
                 solver->setVerbosity(verbosity);
-                // TEMP HACK
-                if (dynamic_cast<spg::solver::ImplicitEulerBaraffWitkin *>(solver.get()) != nullptr ||
-                    dynamic_cast<spg::solver::ImplicitEulerNewtonDv *>(solver.get()) != nullptr ||
-                    dynamic_cast<spg::solver::ImplicitEulerNewtonRobust *>(solver.get()) != nullptr ||
-                    dynamic_cast<spg::solver::ImplicitEulerNewtonDx *>(solver.get()) != nullptr ||
-                    dynamic_cast<spg::solver::StaticNewton *>(solver.get()) != nullptr ||
-                    dynamic_cast<spg::solver::QuasiStaticNewton *>(solver.get()) != nullptr ||
-                    dynamic_cast<spg::solver::QuasiStaticNewtonRobust *>(solver.get()) != nullptr ||
-                    dynamic_cast<spg::solver::SimplecticEuler *>(solver.get()) != nullptr ||
-                    dynamic_cast<spg::solver::BDF2 *>(solver.get()) != nullptr ||
-                    dynamic_cast<spg::solver::XPBD *>(solver.get()) != nullptr) {
-                    float width{1}, height{1}, depth{1}, mass{1};
-                    /* solver->addObject(createAnchoredRigidBody(mass, width, height, depth)); */
-                    /* solver->addObject(createPulledRigidBody(mass, width, height, depth)); */
-                    solver->addObject(
-                        createRigidBodyChain(mass, width, height, depth, 1 * simObjectResolutionMultiplier));
-                } else {
+                if (sceneType != SceneType::RBChain && sceneType != SceneType::AnchoredRB &&
+                    sceneType != SceneType::PulledRB) {
                     const auto objects = createSceneObjects(
                         sceneType, membraneType, bendingType, springType, femType, simObjectResolutionMultiplier);
+                    for (const auto &object : objects) {
+                        solver->addObject(object);
+                    }
+                } else {
+                    const auto objects = createRigidBodySceneObjects(sceneType, simObjectResolutionMultiplier);
                     for (const auto &object : objects) {
                         solver->addObject(object);
                     }
