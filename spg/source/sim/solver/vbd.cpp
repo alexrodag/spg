@@ -4,6 +4,7 @@
 #include <spg/sim/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
 #include <spg/utils/graphColoring.h>
+#include <spg/utils/functionalUtilities.h>
 
 #include <iostream>
 
@@ -23,7 +24,6 @@ void VBD::step()
     const int nObjects = static_cast<int>(std::get<std::vector<SimObject>>(m_objects).size());
     m_simObjectsOldPos.resize(nObjects);
     m_simObjectsInertialPositions.resize(nObjects);
-    m_simObjPrevStepVelocities.resize(nObjects);
     if (m_verbosity == Verbosity::Performance) {
         std::cout << "VDB step\n";
     }
@@ -34,53 +34,62 @@ void VBD::step()
     Real descentTime = 0;
     Real updateTime = 0;
 
+    // Compute total DOFs
+    int accumulatedNDOF = 0;
+    apply_each(
+        [&accumulatedNDOF](const auto &objs) {
+            for (const auto &obj : objs) {
+                accumulatedNDOF += obj.nDOF();
+            }
+        },
+        m_objects);
+    const int totalNDOF{accumulatedNDOF};
+    m_xOld.resize(totalNDOF);
+    m_xInertial.resize(totalNDOF);
+
     for (int s = 0; s < m_nsubsteps; ++s) {
-        // Compute predicted inertial pos and initial guess per vertex
         detailTimer.start();
-        for (int objId = 0; objId < nObjects; ++objId) {
-            auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
-            auto &positions = object.positions();
-            const auto &velocities = object.velocities();
-            const int nVertices = object.size();
-            const Real dtdt = dt * dt;
-            const Vector3 dtdtg = dtdt * m_gravity;
-            m_simObjectsOldPos[objId] = positions;
-            auto &inertialPositions = m_simObjectsInertialPositions[objId];
-            inertialPositions.resize(nVertices);
-            // Set prevStep velocities with current ones if first time or update required
-            auto &prevStepVelocities = m_simObjPrevStepVelocities[objId];
-            if (prevStepVelocities.size() != velocities.size()) {
-                prevStepVelocities = velocities;
-            }
-            for (int i = 0; i < nVertices; ++i) {
-                inertialPositions[i] = positions[i] + dt * velocities[i] + dtdtg;
-            }
-            if (m_initialGuessType == InitialGuessType::Inertial) {
-                // Guess with constant velocity
-                positions = inertialPositions;
-                std::for_each(positions.begin(), positions.end(), [dtdtg](Vector3 &pos) { pos -= dtdtg; });
-            } else if (m_initialGuessType == InitialGuessType::InertialWithAcceleration) {
-                // Guess with constant velocity and explicit accelerations
-                positions = inertialPositions;
-            } else if (m_initialGuessType == InitialGuessType::Adaptive) {
-                // Guess with constant velocity and adaptive accelerations based on the paper
-                // Note: Doesnt seem to work that well, introduces oscillation. May be worth investigating why
-                const Real aExtNorm = m_gravity.norm();
-                const Vector3 aExtDirection = m_gravity / aExtNorm;
-                std::vector<Vector3> adaptiveAcceleration(nVertices);
-                // TODO: This loop has potential for parallelism, profile.
-                for (int i = 0; i < nVertices; ++i) {
-                    adaptiveAcceleration[i] = (velocities[i] - prevStepVelocities[i]) / dt;
-                    const Real aExtProjection = adaptiveAcceleration[i].dot(aExtDirection);
-                    const Real factor =
-                        std::clamp(aExtProjection / aExtNorm, static_cast<Real>(0), static_cast<Real>(1));
-                    adaptiveAcceleration[i] = m_gravity * factor;
-                    positions[i] = positions[i] + dt * velocities[i] + adaptiveAcceleration[i] * dtdt;
+        // Store previous positions
+        apply_each(
+            [this](const auto &objs) {
+                int accumulatedNDOF = 0;
+                for (const auto &obj : objs) {
+                    obj.getPositions(m_xOld, accumulatedNDOF);
+                    accumulatedNDOF += obj.nDOF();
                 }
-            }
-            // Store prev velocities for next step
-            m_simObjPrevStepVelocities[objId] = velocities;
-        }
+            },
+            m_objects);
+        // Apply explicit forces to the velocities and compute predicted inertial pos and initial guess
+        apply_each(
+            [this, dt](auto &objs) {
+                int accumulatedNDOF = 0;
+                const Vector3 dtg = dt * m_gravity;
+                auto l_skew = [](const spg::Vector3 &v) {
+                    spg::Matrix3 vSkew;
+                    vSkew << 0, -v.z(), v.y(), v.z(), 0, -v.x(), -v.y(), v.x(), 0;
+                    return vSkew;
+                };
+                for (auto &obj : objs) {
+                    const int nPrimitives = static_cast<int>(obj.size());
+                    for (int i = 0; i < nPrimitives; ++i) {
+                        // TODO: This can be made more efficient by merging operations and bypassing the velocity, but I
+                        // leave it as it is for the sake of clarity
+                        obj.velocities()[i] += dtg;
+                        if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
+                            obj.omegas()[i] += dt * obj.invInertias()[i] *
+                                               (-l_skew(obj.omegas()[i]) * obj.inertias()[i] * obj.omegas()[i]);
+                        }
+                    }
+                    obj.integrateVelocities(dt);
+                    obj.getPositions(m_xInertial, accumulatedNDOF);
+                    accumulatedNDOF += obj.nDOF();
+                }
+                if (m_initialGuessType == InitialGuessType::InertialWithAcceleration) {
+                    // Guess with constant velocity and explicit accelerations, already stored in objects state, no need
+                    // to do anything
+                }
+            },
+            m_objects);
         detailTimer.stop();
         inertialTime += detailTimer.getMilliseconds();
 
@@ -88,71 +97,88 @@ void VBD::step()
         detailTimer.start();
         const int iterations = m_iterations;
         for (int iter = 0; iter < iterations; ++iter) {
-            for (int objId = 0; objId < std::get<std::vector<SimObject>>(m_objects).size(); ++objId) {
-                auto &obj = std::get<std::vector<SimObject>>(m_objects)[objId];
-                const auto &inertialPositions = m_simObjectsInertialPositions[objId];
-                auto &elementsPerVertex = m_simObjectsElementsPerVertex[objId];
-                const int nVertices = obj.size();
-                // Vertex descent function
-                auto l_vertexDescent =
-                    [&obj, &inertialPositions, &elementsPerVertex, invdtSquared, epsilon](const int vIdx) {
-                        const auto mOverdtSquared = obj.masses()[vIdx] * invdtSquared;
-                        Vector3 f = -mOverdtSquared * (obj.positions()[vIdx] - inertialPositions[vIdx]);
-                        Matrix3 H = mOverdtSquared * Matrix3::Identity();
-                        auto &vertexElementEntriesPerEnergy = elementsPerVertex[vIdx];
-                        for (int e = 0; e < obj.energies().size(); ++e) {
-                            auto energy = obj.energies()[e].get();
-                            const auto &vertexElementEntries = vertexElementEntriesPerEnergy[e];
-                            // Note: This inner loop would be implemented in parallel in the GPU version, but for
-                            // multicore CPU it does not improve performance, as the outer parallel loop
-                            // already feeds all the cores in current CPUs
-                            for (const auto [stencilIdx, vertexIdx] : vertexElementEntries) {
-                                energy->accumulateVertexForce(stencilIdx, vertexIdx, obj, f);
-                                energy->accumulateVertexHessian(stencilIdx, vertexIdx, obj, H);
+            int objId = 0;
+            int accumulatedNDOF = 0;
+            apply_each(
+                [this, &objId, &accumulatedNDOF, invdtSquared, epsilon](auto &objs) {
+                    for (auto &obj : objs) {
+                        auto &elementsPerVertex = m_simObjectsElementsPerVertex[objId];
+                        const int nVertices = obj.size();
+                        // Vertex descent function
+                        auto l_vertexDescent = [this, &obj, &elementsPerVertex, accumulatedNDOF, invdtSquared, epsilon](
+                                                   const int vIdx) {
+                            const auto mOverdtSquared = obj.masses()[vIdx] * invdtSquared;
+                            Vector<obj.s_nDOFs> f;
+                            Matrix<obj.s_nDOFs, obj.s_nDOFs> H;
+                            H.setZero();
+                            f.segment<3>(0) =
+                                -mOverdtSquared *
+                                (obj.positions()[vIdx] - m_xInertial.segment<3>(vIdx * obj.s_nDOFs + accumulatedNDOF));
+                            H.block<3, 3>(0, 0) = mOverdtSquared * Matrix3::Identity();
+                            if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
+                                f.segment<3>(3) = -invdtSquared *
+                                                  (obj.inertias()[vIdx] *
+                                                   (obj.orientations()[vIdx] -
+                                                    m_xInertial.segment<3>(vIdx * obj.s_nDOFs + 3 + accumulatedNDOF)));
+                                H.block<3, 3>(3, 3) = invdtSquared * obj.inertias()[vIdx];
+                            }
+                            auto &vertexElementEntriesPerEnergy = elementsPerVertex[vIdx];
+                            for (int e = 0; e < obj.energies().size(); ++e) {
+                                auto energy = obj.energies()[e].get();
+                                const auto &vertexElementEntries = vertexElementEntriesPerEnergy[e];
+                                // Note: This inner loop would be implemented in parallel in the GPU version,
+                                // but for multicore CPU it does not improve performance, as the outer parallel
+                                // loop already feeds all the cores in current CPUs
+                                for (const auto [stencilIdx, vertexIdx] : vertexElementEntries) {
+                                    energy->accumulateVertexForce(stencilIdx, vertexIdx, obj, f);
+                                    energy->accumulateVertexHessian(stencilIdx, vertexIdx, obj, H);
+                                }
+                            }
+                            if (H.determinant() > epsilon) {
+                                // Note: If required, it is possible to do a PSD projection to the Hessian here,
+                                // before inverting it
+                                const auto deltax = (H.inverse() * f).eval();
+                                // Note: Line search could be added here as well, but they mention in the paper
+                                // that it is typically not needed
+                                obj.updateElementPositionFromDx(deltax, vIdx);
+                            }
+                        };
+                        if (!m_simObjectsVertexGroups.empty()) {
+                            // If vertex groups have been computed, run vertex descent in a Parallel Gauss Seidel
+                            // fashion
+                            const auto &vertexGroups = m_simObjectsVertexGroups[objId];
+                            for (const auto &vertexGroup : vertexGroups) {
+                                const int verticesInGroup = static_cast<int>(vertexGroup.size());
+#pragma omp parallel for
+                                for (int v = 0; v < verticesInGroup; ++v) {
+                                    l_vertexDescent(vertexGroup[v]);
+                                }
+                            }
+                        } else {
+                            // Run serial Gauss Seidel otherwise
+                            for (int v = 0; v < nVertices; ++v) {
+                                l_vertexDescent(v);
                             }
                         }
-                        if (H.determinant() > epsilon) {
-                            // Note: If required, it is possible to do a PSD projection to the Hessian here, before
-                            // inverting it
-                            const Vector3 deltax = H.inverse() * f;
-                            // Note: Line search could be added here as well, but they mention in the paper that it is
-                            // typically not needed
-                            obj.positions()[vIdx] += deltax;
-                        }
-                    };
-                if (!m_simObjectsVertexGroups.empty()) {
-                    // If vertex groups have been computed, run vertex descent in a Parallel Gauss Seidel fashion
-                    const auto &vertexGroups = m_simObjectsVertexGroups[objId];
-                    for (const auto &vertexGroup : vertexGroups) {
-                        const int verticesInGroup = static_cast<int>(vertexGroup.size());
-#pragma omp parallel for
-                        for (int v = 0; v < verticesInGroup; ++v) {
-                            l_vertexDescent(vertexGroup[v]);
-                        }
+                        accumulatedNDOF += obj.nDOF();
                     }
-                } else {
-                    // Run serial Gauss Seidel otherwise
-                    for (int v = 0; v < nVertices; ++v) {
-                        l_vertexDescent(v);
-                    }
-                }
-            }
+                },
+                m_objects);
         }
         detailTimer.stop();
         descentTime += detailTimer.getMilliseconds();
 
         // Update velocities
         detailTimer.start();
-        for (int objId = 0; objId < nObjects; ++objId) {
-            auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
-            const auto &positions = object.positions();
-            const auto &oldPositions = m_simObjectsOldPos[objId];
-            auto &velocities = object.velocities();
-            const int nParticles = static_cast<int>(object.size());
-            for (int i = 0; i < nParticles; ++i) {
-                velocities[i] = (positions[i] - oldPositions[i]) * invdt;
-            }
-        }
+        accumulatedNDOF = 0;
+        apply_each(
+            [this, &accumulatedNDOF, invdt](auto &objs) {
+                for (auto &obj : objs) {
+                    obj.computeIntegratedVelocities(m_xOld, accumulatedNDOF, invdt);
+                    accumulatedNDOF += obj.nDOF();
+                }
+            },
+            m_objects);
         detailTimer.stop();
         updateTime += detailTimer.getMilliseconds();
     }
@@ -170,12 +196,6 @@ void VBD::reset()
 {
     BaseSolver::reset();
     m_precomputationUpdateRequired = true;
-    m_simObjPrevStepVelocities.clear();
-}
-
-void VBD::requirePrecomputationUpdate()
-{
-    m_precomputationUpdateRequired = true;
 }
 
 void VBD::computeParallelVertexGroups()
@@ -183,20 +203,25 @@ void VBD::computeParallelVertexGroups()
     Timer timer;
     timer.start();
     m_simObjectsVertexGroups.clear();
-    m_simObjectsVertexGroups.resize(std::get<std::vector<SimObject>>(m_objects).size());
-    for (int objId = 0; objId < std::get<std::vector<SimObject>>(m_objects).size(); ++objId) {
-        const auto &object = std::get<std::vector<SimObject>>(m_objects)[objId];
-        auto &vertexGroups = m_simObjectsVertexGroups[objId];
-        std::vector<coloring::FlatStencils> flatStencilsSet;
-        for (const auto &energy : object.energies()) {
-            flatStencilsSet.push_back({energy->flatStencils(), energy->stencilSize()});
-        }
-        auto vertexColors = coloring::colorVertices(object.size(), flatStencilsSet);
-        for (int i = 0; i < vertexColors.size(); ++i) {
-            vertexGroups.resize(std::max(vertexGroups.size(), static_cast<size_t>(vertexColors[i] + 1)));
-            vertexGroups[vertexColors[i]].push_back(i);
-        }
-    }
+    m_simObjectsVertexGroups.resize(numSimObjects());
+    int objId = 0;
+    apply_each(
+        [this, &objId](const auto &objs) {
+            for (const auto &obj : objs) {
+                auto &vertexGroups = m_simObjectsVertexGroups[objId];
+                objId++;
+                std::vector<coloring::FlatStencils> flatStencilsSet;
+                for (const auto &energy : obj.energies()) {
+                    flatStencilsSet.push_back({energy->flatStencils(), energy->stencilSize()});
+                }
+                auto vertexColors = coloring::colorVertices(obj.size(), flatStencilsSet);
+                for (int i = 0; i < vertexColors.size(); ++i) {
+                    vertexGroups.resize(std::max(vertexGroups.size(), static_cast<size_t>(vertexColors[i] + 1)));
+                    vertexGroups[vertexColors[i]].push_back(i);
+                }
+            }
+        },
+        m_objects);
     timer.stop();
     std::cout << "VBD vertex coloring time: " << timer.getMilliseconds() << "ms\n";
 }
@@ -205,30 +230,35 @@ void VBD::computeStencilInfoPerVertex()
 {
     Timer timer;
     timer.start();
-    m_simObjectsElementsPerVertex.resize(std::get<std::vector<SimObject>>(m_objects).size());
-    for (int objId = 0; objId < std::get<std::vector<SimObject>>(m_objects).size(); ++objId) {
-        const auto &obj = std::get<std::vector<SimObject>>(m_objects)[objId];
-        const int nVertices = obj.size();
-        const auto &energies = obj.energies();
-        const int nEnergies = static_cast<int>(energies.size());
-        auto &elementsPerVertex = m_simObjectsElementsPerVertex[objId];
-        elementsPerVertex.resize(nVertices);
-        for (int v = 0; v < nVertices; ++v) {
-            elementsPerVertex[v].clear();
-            elementsPerVertex[v].resize(nEnergies);
-        }
-        for (int e = 0; e < energies.size(); ++e) {
-            const auto &energy = energies[e];
-            const int stencilSize = energy->stencilSize();
-            const auto flatStencils = energy->flatStencils();
-            const int nStencilEntries = static_cast<int>(flatStencils.size());
-            for (int s = 0; s < nStencilEntries; ++s) {
-                const int vertexIdx = flatStencils[s];
-                const ElementEntry entry = {s / stencilSize, s % stencilSize};
-                elementsPerVertex[vertexIdx][e].push_back(entry);
+    m_simObjectsElementsPerVertex.resize(numSimObjects());
+    int objId = 0;
+    apply_each(
+        [this, &objId](const auto &objs) {
+            for (const auto &obj : objs) {
+                const int nVertices = obj.size();
+                const auto &energies = obj.energies();
+                const int nEnergies = static_cast<int>(energies.size());
+                auto &elementsPerVertex = m_simObjectsElementsPerVertex[objId];
+                objId++;
+                elementsPerVertex.resize(nVertices);
+                for (int v = 0; v < nVertices; ++v) {
+                    elementsPerVertex[v].clear();
+                    elementsPerVertex[v].resize(nEnergies);
+                }
+                for (int e = 0; e < energies.size(); ++e) {
+                    const auto &energy = energies[e];
+                    const int stencilSize = energy->stencilSize();
+                    const auto flatStencils = energy->flatStencils();
+                    const int nStencilEntries = static_cast<int>(flatStencils.size());
+                    for (int s = 0; s < nStencilEntries; ++s) {
+                        const int vertexIdx = flatStencils[s];
+                        const ElementEntry entry = {s / stencilSize, s % stencilSize};
+                        elementsPerVertex[vertexIdx][e].push_back(entry);
+                    }
+                }
             }
-        }
-    }
+        },
+        m_objects);
     timer.stop();
     if (m_verbosity == Verbosity::Performance) {
         std::cout << "VBD stencil incidence per vertex computation time: " << timer.getMilliseconds() << "ms\n";
