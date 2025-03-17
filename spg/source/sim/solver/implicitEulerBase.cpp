@@ -43,10 +43,6 @@ void ImplicitEulerBase::setObjectsPositions(const VectorX &pos)
             for (auto &obj : objs) {
                 obj.setPositions(pos, accumulatedNDOF);
                 accumulatedNDOF += obj.nDOF();
-                if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
-                    obj.updateRotationMatrices();
-                    obj.updateInertias();
-                }
             }
         },
         m_objects);

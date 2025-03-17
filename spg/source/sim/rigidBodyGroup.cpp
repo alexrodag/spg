@@ -47,6 +47,8 @@ void RigidBodyGroup::setPositions(const VectorX &pos, int offsetIndex)
         m_x[bodyIdx] = pos.segment<3>(startOffset);
         m_theta[bodyIdx] = pos.segment<3>(startOffset + 3);
     }
+    updateRotationMatrices();
+    updateInertias();
 }
 
 void RigidBodyGroup::setVelocities(const VectorX &vel, int offsetIndex)
@@ -145,7 +147,6 @@ void RigidBodyGroup::addBody(const Vector3 &p,
     m_theta0.push_back(theta0);
     m_localInertia.push_back(localInertia);
     m_localInertiaInv.push_back(localInertia.inverse());
-    const auto angle = theta.norm();
     m_rotationMatrix.push_back(axisAngleToRotMatrix(theta));
     m_inertia.emplace_back();
     m_inertiaInv.emplace_back();
