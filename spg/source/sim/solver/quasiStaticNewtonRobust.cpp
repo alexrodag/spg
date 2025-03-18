@@ -34,7 +34,6 @@ void QuasiStaticNewtonRobust::step()
         bool successfulStep{true};
 
         // Update current dt
-        // TODO Increase when possible
         const Real maxDt = m_dtStep / m_nsubsteps;
         if (m_currentDt == -1. || m_currentDt > maxDt) {
             m_currentDt = maxDt;
@@ -62,6 +61,9 @@ void QuasiStaticNewtonRobust::step()
 
             // Create linear problem left and right hand sides
             const SparseMatrix LHS = M - dtdt * K;
+            // TODO: This xi-x0 (and the corresponding xCandidate - x0 below) do not conform to the current rigid body
+            // implementation, as they should operate on the local theta, not the global one. Rethink how to do this,
+            // similar to how it is done in the VBD solver
             const VectorX RHS = dtdt * f - M * (xi - x0);
             const Real initialResidual = RHS.norm();
 

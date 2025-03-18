@@ -595,7 +595,7 @@ spg::RigidBodyGroup createRigidBodyChain(const spg::Real mass,
 
     rbGroup.addEnergy(springAnchorEnergy);
     if (nBodies > 1) {
-    rbGroup.addEnergy(springEnergy);
+        rbGroup.addEnergy(springEnergy);
     }
     return rbGroup;
 }
@@ -1053,10 +1053,10 @@ int main()
                 solverSubsteps.push_back(1);
                 if (sceneType != SceneType::RBChain && sceneType != SceneType::AnchoredRB &&
                     sceneType != SceneType::PulledRB) {
-                const auto objects = createSceneObjects(
-                    sceneType, membraneType, bendingType, springType, femType, simObjectResolutionMultiplier);
-                for (const auto &object : objects) {
-                    solver->addObject(object);
+                    const auto objects = createSceneObjects(
+                        sceneType, membraneType, bendingType, springType, femType, simObjectResolutionMultiplier);
+                    for (const auto &object : objects) {
+                        solver->addObject(object);
                     }
                 } else {
                     const auto objects = createRigidBodySceneObjects(sceneType, simObjectResolutionMultiplier);
