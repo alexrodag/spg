@@ -32,7 +32,7 @@ protected:
     void computeStencilInfoPerVertex();
 
     InitialGuessType m_initialGuessType{InitialGuessType::InertialWithAcceleration};
-    int m_iterations{5};  // TODO: Expose this in the solver API
+    int m_iterations{1};  // TODO: Expose this in the solver API
     std::vector<std::vector<std::vector<int>>> m_simObjectsVertexGroups;
     std::vector<ElementsPerVertex> m_simObjectsElementsPerVertex;
     bool m_precomputationUpdateRequired{true};

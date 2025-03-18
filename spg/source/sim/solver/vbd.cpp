@@ -100,49 +100,59 @@ void VBD::step()
             int objId = 0;
             int accumulatedNDOF = 0;
             apply_each(
-                [this, &objId, &accumulatedNDOF, invdtSquared, epsilon](auto &objs) {
+                [this, &objId, &accumulatedNDOF, invdt, invdtSquared, epsilon, iter](auto &objs) {
                     for (auto &obj : objs) {
                         auto &elementsPerVertex = m_simObjectsElementsPerVertex[objId];
                         const int nVertices = obj.size();
                         // Vertex descent function
-                        auto l_vertexDescent = [this, &obj, &elementsPerVertex, accumulatedNDOF, invdtSquared, epsilon](
-                                                   const int vIdx) {
-                            const auto mOverdtSquared = obj.masses()[vIdx] * invdtSquared;
-                            Vector<obj.s_nDOFs> f;
-                            Matrix<obj.s_nDOFs, obj.s_nDOFs> H;
-                            H.setZero();
-                            f.segment<3>(0) =
-                                -mOverdtSquared *
-                                (obj.positions()[vIdx] - m_xInertial.segment<3>(vIdx * obj.s_nDOFs + accumulatedNDOF));
-                            H.block<3, 3>(0, 0) = mOverdtSquared * Matrix3::Identity();
-                            if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
-                                f.segment<3>(3) = -invdtSquared *
-                                                  (obj.inertias()[vIdx] *
-                                                   (obj.orientations()[vIdx] -
-                                                    m_xInertial.segment<3>(vIdx * obj.s_nDOFs + 3 + accumulatedNDOF)));
-                                H.block<3, 3>(3, 3) = invdtSquared * obj.inertias()[vIdx];
-                            }
-                            auto &vertexElementEntriesPerEnergy = elementsPerVertex[vIdx];
-                            for (int e = 0; e < obj.energies().size(); ++e) {
-                                auto energy = obj.energies()[e].get();
-                                const auto &vertexElementEntries = vertexElementEntriesPerEnergy[e];
-                                // Note: This inner loop would be implemented in parallel in the GPU version,
-                                // but for multicore CPU it does not improve performance, as the outer parallel
-                                // loop already feeds all the cores in current CPUs
-                                for (const auto [stencilIdx, vertexIdx] : vertexElementEntries) {
-                                    energy->accumulateVertexForce(stencilIdx, vertexIdx, obj, f);
-                                    energy->accumulateVertexHessian(stencilIdx, vertexIdx, obj, H);
+                        auto l_vertexDescent =
+                            [this, &obj, &elementsPerVertex, accumulatedNDOF, invdt, invdtSquared, epsilon, iter](
+                                const int vIdx) {
+                                const auto mOverdtSquared = obj.masses()[vIdx] * invdtSquared;
+                                Vector<obj.s_nDOFs> f;
+                                Matrix<obj.s_nDOFs, obj.s_nDOFs> H;
+                                f.setZero();
+                                H.setZero();
+                                if (iter != 0 || m_initialGuessType == InitialGuessType::InertialWithAcceleration) {
+                                    // The first iter with inertial guess produces no forces here, so we can skip it
+                                    f.segment<3>(0) = -mOverdtSquared *
+                                                      (obj.positions()[vIdx] -
+                                                       m_xInertial.segment<3>(vIdx * obj.s_nDOFs + accumulatedNDOF));
+                                    if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
+                                        f.segment<3>(3) =
+                                            -invdt * (obj.inertias()[vIdx] *
+                                                      (obj.computeIntegratedOmega(
+                                                           m_xOld.segment<3>(vIdx * obj.s_nDOFs + 3 + accumulatedNDOF),
+                                                           invdt,
+                                                           vIdx) -
+                                                       obj.omegas()[vIdx]));
+                                    }
                                 }
-                            }
-                            if (H.determinant() > epsilon) {
-                                // Note: If required, it is possible to do a PSD projection to the Hessian here,
-                                // before inverting it
-                                const auto deltax = (H.inverse() * f).eval();
-                                // Note: Line search could be added here as well, but they mention in the paper
-                                // that it is typically not needed
-                                obj.updateElementPositionFromDx(deltax, vIdx);
-                            }
-                        };
+                                H.block<3, 3>(0, 0) = mOverdtSquared * Matrix3::Identity();
+                                if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
+                                    H.block<3, 3>(3, 3) = invdtSquared * obj.inertias()[vIdx];
+                                }
+                                auto &vertexElementEntriesPerEnergy = elementsPerVertex[vIdx];
+                                for (int e = 0; e < obj.energies().size(); ++e) {
+                                    auto energy = obj.energies()[e].get();
+                                    const auto &vertexElementEntries = vertexElementEntriesPerEnergy[e];
+                                    // Note: This inner loop would be implemented in parallel in the GPU version,
+                                    // but for multicore CPU it does not improve performance, as the outer parallel
+                                    // loop already feeds all the cores in current CPUs
+                                    for (const auto [stencilIdx, vertexIdx] : vertexElementEntries) {
+                                        energy->accumulateVertexForce(stencilIdx, vertexIdx, obj, f);
+                                        energy->accumulateVertexHessian(stencilIdx, vertexIdx, obj, H);
+                                    }
+                                }
+                                if (H.determinant() > epsilon) {
+                                    // Note: If required, it is possible to do a PSD projection to the Hessian here,
+                                    // before inverting it
+                                    const auto deltax = (H.inverse() * f).eval();
+                                    // Note: Line search could be added here as well, but they mention in the paper
+                                    // that it is typically not needed
+                                    obj.updateElementPositionFromDx(deltax, vIdx);
+                                }
+                            };
                         if (!m_simObjectsVertexGroups.empty()) {
                             // If vertex groups have been computed, run vertex descent in a Parallel Gauss Seidel
                             // fashion

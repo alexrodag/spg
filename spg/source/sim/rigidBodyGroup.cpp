@@ -127,6 +127,12 @@ void RigidBodyGroup::computeIntegratedVelocities(const VectorX &oldPos, int offs
     }
 }
 
+Vector3 RigidBodyGroup::computeIntegratedOmega(const Vector3 &oldTheta, Real invdt, int i)
+{
+    const Eigen::AngleAxis<spg::Real> deltaAxisAngle(m_rotationMatrix[i] * axisAngleToRotMatrix(oldTheta).transpose());
+    return deltaAxisAngle.angle() * deltaAxisAngle.axis() * invdt;
+}
+
 void RigidBodyGroup::addBody(const Vector3 &p,
                              const Vector3 &p0,
                              const Real mass,

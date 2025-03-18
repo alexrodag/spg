@@ -21,9 +21,9 @@ public:
     const std::vector<Vector3> &positions() const { return m_x; }
     std::vector<Vector3> &positions() { return m_x; }
     const std::vector<Vector3> &positions0() const { return m_x0; }
-    const std::vector<Vector3> &orientations() const { return m_theta; }
-    std::vector<Vector3> &orientations() { return m_theta; }
-    const std::vector<Vector3> &orientations0() const { return m_theta0; }
+    const std::vector<Vector3> &thetas() const { return m_theta; }
+    std::vector<Vector3> &thetas() { return m_theta; }
+    const std::vector<Vector3> &thetas0() const { return m_theta0; }
     std::vector<Vector3> &velocities() { return m_v; }
     const std::vector<Vector3> &velocities() const { return m_v; }
     void getPositions(VectorX &pos, int offsetIndex) const;
@@ -34,6 +34,8 @@ public:
     void updatePositionsFromDx(const VectorX &dx, int offsetIndex);
     void integrateVelocities(Real dt);
     void computeIntegratedVelocities(const VectorX &oldPos, int offsetIndex, Real invdt);
+    // TODO: Could be faster to use Eigen ref. Profile
+    Vector3 computeIntegratedOmega(const Vector3 &oldOrientation, Real invdt, int i);
     std::vector<Vector3> &omegas() { return m_omega; }
     const std::vector<Vector3> &omegas() const { return m_omega; }
     const std::vector<Real> &invMasses() const { return m_w; }
