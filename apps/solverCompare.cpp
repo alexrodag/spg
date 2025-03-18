@@ -1260,11 +1260,27 @@ int main()
                 // Assume there is a single simObject per solver, just to simplify
                 // Note: If the solvers require additional info to work properly (e.g., BDF2 requires info about the
                 // previous step), just copying the current state can lead to weird behaviors
-                const auto &positions = solvers.front()->simObjects().front().positions();
-                const auto &velocities = solvers.front()->simObjects().front().velocities();
-                for (auto &solver : solvers) {
-                    solver->simObjects().front().positions() = positions;
-                    solver->simObjects().front().velocities() = velocities;
+                if (!solvers.front()->simObjects().empty()) {
+                    const auto &positions = solvers.front()->simObjects().front().positions();
+                    const auto &velocities = solvers.front()->simObjects().front().velocities();
+                    for (auto &solver : solvers) {
+                        solver->simObjects().front().positions() = positions;
+                        solver->simObjects().front().velocities() = velocities;
+                    }
+                }
+                if (!solvers.front()->rbGroups().empty()) {
+                    const auto &positions = solvers.front()->rbGroups().front().positions();
+                    const auto &velocities = solvers.front()->rbGroups().front().velocities();
+                    const auto &thetas = solvers.front()->rbGroups().front().thetas();
+                    const auto &omegas = solvers.front()->rbGroups().front().omegas();
+                    for (auto &solver : solvers) {
+                        solver->rbGroups().front().positions() = positions;
+                        solver->rbGroups().front().velocities() = velocities;
+                        solver->rbGroups().front().thetas() = thetas;
+                        solver->rbGroups().front().omegas() = omegas;
+                        solver->rbGroups().front().updateRotationMatrices();
+                        solver->rbGroups().front().updateInertias();
+                    }
                 }
                 if (!run) {
                     l_updateView();
