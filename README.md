@@ -1,6 +1,6 @@
 # SPG
 
-SPG (short for Spring) is a research-focused C++ physics simulation library for easy implementation and comparison of solvers and mechanical energy models. It provides a common interface for solvers and energies, making all solver implementations compatible with all energies without requiring additional effort. A set of solvers and energies are already implemented in SPG. I personally use it to implement and compare interesting ideas from state-of-the-art research.
+SPG (short for Spring) is a research-focused C++ physics simulation library for easy implementation and comparison of solvers and mechanical energy models. It provides a common interface for solvers and energies, making all solver implementations compatible with all energies without requiring additional effort. A set of solvers and energies are already implemented in SPG, and there is support for both particle systems and rigid body systems. I personally use it to implement and compare interesting ideas from state-of-the-art research.
 
 ![SPG solver comparison example](media/spg-solver-compare.gif)
 
@@ -49,11 +49,11 @@ The current implementations are focused on parallel CPU simulation of deformable
 
 This is still a experimental project, which is the best excuse I can think of to justify the lack of proper documentation and unit testing.
 
-I intend to explore several big features in the future, in no particular order (if you are interested in contributing, let me know):
+I intend to explore several big features in the future, in no particular order:
 - Unified energy damping model
 - Proper boundary conditions
 - Collision detection
-- Rigid bodies
+- ~~Rigid bodies~~ (*Done*)
 - Differentiable simulation
 - GPU support
 

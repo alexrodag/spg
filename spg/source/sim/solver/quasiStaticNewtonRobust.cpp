@@ -30,6 +30,9 @@ void QuasiStaticNewtonRobust::step()
         m_objects);
     const int totalNDOF{accumulatedNDOF};
 
+    VectorX x0(totalNDOF);
+    VectorX v(totalNDOF);
+
     for (int s = 0; s < m_nsubsteps; ++s) {
         bool successfulStep{true};
 
@@ -39,11 +42,10 @@ void QuasiStaticNewtonRobust::step()
             m_currentDt = maxDt;
         }
         const Real dt = m_currentDt;
-        const Real dtdt = dt * dt;
+        const Real invdt = 1 / dt;
+        const Real invdtSquared = invdt * invdt;
 
         // Store state backup
-        // TODO Check if worth storing them as members
-        VectorX x0(totalNDOF);
         getSystemPositions(x0);
 
         int currentNewtonIterations = 0;
@@ -60,11 +62,10 @@ void QuasiStaticNewtonRobust::step()
             getSystemStiffnessMatrix(K);
 
             // Create linear problem left and right hand sides
-            const SparseMatrix LHS = M - dtdt * K;
-            // TODO: This xi-x0 (and the corresponding xCandidate - x0 below) do not conform to the current rigid body
-            // implementation, as they should operate on the local theta, not the global one. Rethink how to do this,
-            // similar to how it is done in the VBD solver
-            const VectorX RHS = dtdt * f - M * (xi - x0);
+            const SparseMatrix LHS = invdtSquared * M - K;
+            accumulatedNDOF = 0;
+            computeSystemIntegratedVelocities(x0, v, invdt);
+            const VectorX RHS = f - invdt * M * v;
             const Real initialResidual = RHS.norm();
 
             // Solve problem to obtain dv
@@ -80,9 +81,10 @@ void QuasiStaticNewtonRobust::step()
                 setObjectsPositions(xi);
                 updateObjectsPositionsFromDx(dx * alpha);
                 getSystemPositions(xCandidate);
+                computeSystemIntegratedVelocities(x0, v, invdt);
                 // compute new RHS
                 getSystemForce(f);
-                stepResidual = (dtdt * f - M * (xCandidate - x0)).norm();
+                stepResidual = (f - invdt * M * v).norm();
                 /*std::cout << "  Line search with step " << alpha << ". Step residual: " << stepResidual
                           << ". Initial residual: " << initialResidual << "\n";*/
                 if (stepResidual < initialResidual) {
@@ -133,5 +135,19 @@ void QuasiStaticNewtonRobust::reset()
     ImplicitEulerBase::reset();
     m_currentDt = -1.;
     m_consecutiveSuccessfulSteps = 0;
+}
+
+void QuasiStaticNewtonRobust::computeSystemIntegratedVelocities(const VectorX &x0, VectorX &v, Real invdt)
+{
+    int accumulatedNDOF = 0;
+    apply_each(
+        [this, &x0, &accumulatedNDOF, invdt](auto &objs) {
+            for (auto &obj : objs) {
+                obj.computeIntegratedVelocities(x0, accumulatedNDOF, invdt);
+                accumulatedNDOF += obj.nDOF();
+            }
+        },
+        m_objects);
+    getSystemVelocities(v);
 }
 }  // namespace spg::solver

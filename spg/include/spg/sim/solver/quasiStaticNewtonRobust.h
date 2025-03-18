@@ -16,7 +16,9 @@ public:
     virtual void reset();
 
 protected:
-    const Real m_newtonThreshold{1e-5};
+    void computeSystemIntegratedVelocities(const VectorX &x0, VectorX &v, Real invdt);
+
+    const Real m_newtonThreshold{1e-1};
 
     // Quality status control
     Real m_currentDt{-1.};
