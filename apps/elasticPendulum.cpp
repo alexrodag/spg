@@ -2,14 +2,14 @@
 #include <vector>
 
 #include <spg/types.h>
-#include <spg/sim/simObject.h>
+#include <spg/sim/simObject/particleGroup.h>
 #include <spg/sim/energy/springEnergy.h>
 #include <spg/sim/energy/springAnchorEnergy.h>
 #include <spg/sim/solver/implicitEulerBaraffWitkin.h>
 
 int main()
 {
-    spg::SimObject obj;
+    spg::ParticleGroup obj;
     obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
     obj.addParticle({1, 0, 0}, {1, 0, 0}, 1);
     auto springAnchorEnergy = std::make_shared<spg::SpringAnchorEnergy>();
@@ -27,9 +27,9 @@ int main()
         solver.step();
         time += dt;
         std::cout << "Anchored particle position at " << time
-                  << "s: " << solver.simObjects().front().positions()[0].transpose() << "\n";
+                  << "s: " << solver.particleGroups().front().positions()[0].transpose() << "\n";
         std::cout << "Free particle position at " << time
-                  << "s: " << solver.simObjects().front().positions()[1].transpose() << "\n\n";
+                  << "s: " << solver.particleGroups().front().positions()[1].transpose() << "\n\n";
     }
     return 0;
 }

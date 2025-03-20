@@ -11,12 +11,12 @@ class DiscreteBendingEnergy : public StencilBlockEnergy<4>
 public:
     DiscreteBendingEnergy() { m_name = "DiscreteBendingEnergy"; }
     void addStencil(const std::array<int, s_stencilSize> &stencil, Real restTheta, Real stiffness);
-    virtual void preparePrecomputations(const SimObject &obj);
+    virtual void preparePrecomputations(const ParticleGroup &obj);
     const std::vector<Real> &restThetas() const { return m_restTheta; }
 
 protected:
-    virtual void dConstraints(int i, const SimObject &obj, ConstraintsAD1 &dC) const;
-    virtual void dConstraints(int i, const SimObject &obj, ConstraintsAD2 &dC) const;
+    virtual void dConstraints(int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const;
+    virtual void dConstraints(int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const;
     std::vector<Real> m_restTheta;
 };
 

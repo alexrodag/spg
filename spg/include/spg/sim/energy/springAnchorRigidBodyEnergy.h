@@ -1,7 +1,7 @@
 #pragma once
 
 #include <spg/sim/energy/energy.h>
-#include <spg/sim/rigidBodyGroup.h>
+#include <spg/sim/simObject/rigidBodyGroup.h>
 
 namespace spg
 {

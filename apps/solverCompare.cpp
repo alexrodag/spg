@@ -11,8 +11,8 @@
 #include <Eigen/Dense>
 
 #include <spg/types.h>
-#include <spg/sim/simObject.h>
-#include <spg/sim/rigidBodyGroup.h>
+#include <spg/sim/simObject/particleGroup.h>
+#include <spg/sim/simObject/rigidBodyGroup.h>
 #include <spg/sim/energy/springEnergy.h>
 #include <spg/sim/energy/springContinuumEnergy.h>
 #include <spg/sim/energy/springAnchorEnergy.h>
@@ -51,9 +51,9 @@ enum class BendingType { Discrete, Quadratic, BaraffWitkin };
 enum class SpringType { Normal, Continuum };
 enum class FemType { Stvk, NeoHookean, SquaredNeoHookean };
 
-spg::SimObject createRope(const float mass, const float ropeLength, const int nParticles, SpringType springType)
+spg::ParticleGroup createRope(const float mass, const float ropeLength, const int nParticles, SpringType springType)
 {
-    spg::SimObject obj;
+    spg::ParticleGroup obj;
     for (int i = 0; i < nParticles; ++i) {
         obj.addParticle({-ropeLength * 0.5f + i * ropeLength / (nParticles - 1),
                          0,
@@ -65,7 +65,7 @@ spg::SimObject createRope(const float mass, const float ropeLength, const int nP
     }
     auto springAnchorEnergy = std::make_shared<spg::SpringAnchorEnergy>();
 
-    std::shared_ptr<spg::SimObject::EnergyT> springEnergy;
+    std::shared_ptr<spg::ParticleGroup::EnergyT> springEnergy;
     if (springType == SpringType::Continuum) {
         springEnergy = std::make_shared<spg::SpringContinuumEnergy>();
     } else {
@@ -182,16 +182,16 @@ spg::TetrahedralMesh buildTetrahedralBeamMesh(const float sideX,
     return spg::TetrahedralMesh(vertices, vertices0, tets);
 }
 
-spg::SimObject createSpringBeam(const float mass,
-                                const float sideX,
-                                const float sideY,
-                                const float sideZ,
-                                const int nVertexX,
-                                const int nVertexY,
-                                const int nVertexZ,
-                                SpringType springType)
+spg::ParticleGroup createSpringBeam(const float mass,
+                                    const float sideX,
+                                    const float sideY,
+                                    const float sideZ,
+                                    const int nVertexX,
+                                    const int nVertexY,
+                                    const int nVertexZ,
+                                    SpringType springType)
 {
-    spg::SimObject obj;
+    spg::ParticleGroup obj;
     spg::TetrahedralMesh tetMesh = buildTetrahedralBeamMesh(sideX, sideY, sideZ, nVertexX, nVertexY, nVertexZ);
     const auto &vertices = tetMesh.vertices();
     const auto &vertices0 = tetMesh.vertices0();
@@ -214,7 +214,7 @@ spg::SimObject createSpringBeam(const float mass,
         obj.addParticle(vertices[i], vertices0[i], particleVolumes[i] * density);
     }
     auto springAnchorEnergy = std::make_shared<spg::SpringAnchorEnergy>();
-    std::shared_ptr<spg::SimObject::EnergyT> springEnergy;
+    std::shared_ptr<spg::ParticleGroup::EnergyT> springEnergy;
     if (springType == SpringType::Continuum) {
         springEnergy = std::make_shared<spg::SpringContinuumEnergy>();
     } else {
@@ -246,18 +246,18 @@ spg::SimObject createSpringBeam(const float mass,
     return obj;
 }
 
-spg::SimObject createTetrahedralBeam(const float mass,
-                                     const float sideX,
-                                     const float sideY,
-                                     const float sideZ,
-                                     const int nVertexX,
-                                     const int nVertexY,
-                                     const int nVertexZ,
-                                     const float young,
-                                     const float poisson,
-                                     FemType femType)
+spg::ParticleGroup createTetrahedralBeam(const float mass,
+                                         const float sideX,
+                                         const float sideY,
+                                         const float sideZ,
+                                         const int nVertexX,
+                                         const int nVertexY,
+                                         const int nVertexZ,
+                                         const float young,
+                                         const float poisson,
+                                         FemType femType)
 {
-    spg::SimObject obj;
+    spg::ParticleGroup obj;
     spg::TetrahedralMesh tetMesh = buildTetrahedralBeamMesh(sideX, sideY, sideZ, nVertexX, nVertexY, nVertexZ);
     const auto &vertices = tetMesh.vertices();
     const auto &vertices0 = tetMesh.vertices0();
@@ -283,7 +283,7 @@ spg::SimObject createTetrahedralBeam(const float mass,
         obj.addParticle(vertices[i], vertices0[i], particleVolumes[i] * density);
     }
     auto springAnchorEnergy = std::make_shared<spg::SpringAnchorEnergy>();
-    std::shared_ptr<spg::SimObject::EnergyT> tetEnergy;
+    std::shared_ptr<spg::ParticleGroup::EnergyT> tetEnergy;
     if (femType == FemType::NeoHookean) {
         tetEnergy = std::make_shared<spg::StableNeoHookeanEnergy>();
     } else if (femType == FemType::SquaredNeoHookean) {
@@ -353,16 +353,16 @@ spg::TriangleMesh buildTriangleSquareMesh(const float width,
     return spg::TriangleMesh(vertices, vertices0, faces);
 }
 
-spg::SimObject createCloth(const float mass,
-                           const float width,
-                           const float height,
-                           const int nvertexRows,
-                           const int nvertexCols,
-                           MembraneType membraneType,
-                           BendingType bendingType)
+spg::ParticleGroup createCloth(const float mass,
+                               const float width,
+                               const float height,
+                               const int nvertexRows,
+                               const int nvertexCols,
+                               MembraneType membraneType,
+                               BendingType bendingType)
 {
     const auto mesh = buildTriangleSquareMesh(width, height, nvertexRows, nvertexCols);
-    spg::SimObject obj;
+    spg::ParticleGroup obj;
     const auto &vertices = mesh.vertices();
     const auto &vertices0 = mesh.vertices0();
     const auto &faces = mesh.faces();
@@ -418,7 +418,7 @@ spg::SimObject createCloth(const float mass,
 
     // Add bending energy
     const spg::Real bendingStiffness = 1e-2;
-    std::shared_ptr<spg::SimObject::EnergyT> bendingEnergy;
+    std::shared_ptr<spg::ParticleGroup::EnergyT> bendingEnergy;
     if (bendingType == BendingType::Discrete) {
         bendingEnergy = std::make_shared<spg::DiscreteBendingEnergy>();
     } else if (bendingType == BendingType::BaraffWitkin) {
@@ -452,7 +452,7 @@ spg::SimObject createCloth(const float mass,
     const spg::Real young = 1e2;
     const spg::Real poisson = 0.0;
 
-    std::shared_ptr<spg::SimObject::EnergyT> membraneEnergy;
+    std::shared_ptr<spg::ParticleGroup::EnergyT> membraneEnergy;
     if (membraneType == MembraneType::Stvk) {
         membraneEnergy = std::make_shared<spg::MembraneStvkEnergy>();
     } else if (membraneType == MembraneType::BaraffWitkin) {
@@ -602,12 +602,12 @@ spg::RigidBodyGroup createRigidBodyChain(const spg::Real mass,
 
 enum class SceneType { Cloth, Rope, SpringBeam, FemBeam, RBChain, AnchoredRB, PulledRB };
 
-std::vector<spg::SimObject> createSceneObjects(SceneType sceneType,
-                                               MembraneType membraneType,
-                                               BendingType bendingType,
-                                               SpringType springType,
-                                               FemType femType,
-                                               int resolutionMultiplier)
+std::vector<spg::ParticleGroup> createSceneObjects(SceneType sceneType,
+                                                   MembraneType membraneType,
+                                                   BendingType bendingType,
+                                                   SpringType springType,
+                                                   FemType femType,
+                                                   int resolutionMultiplier)
 {
     float mass = 1.0f;
     if (sceneType == SceneType::Cloth) {
@@ -660,7 +660,9 @@ std::vector<spg::RigidBodyGroup> createRigidBodySceneObjects(SceneType sceneType
 // Polyscope and custom utils for picking
 /////////////////////////////////////////
 
-std::shared_ptr<spg::SpringAnchorEnergy> addPickingEnergy(spg::SimObject &obj, int particleId, const spg::Vector3 &pos)
+std::shared_ptr<spg::SpringAnchorEnergy> addPickingEnergy(spg::ParticleGroup &obj,
+                                                          int particleId,
+                                                          const spg::Vector3 &pos)
 {
     auto springAnchorEnergy = std::make_shared<spg::SpringAnchorEnergy>();
     spg::Real pickingStiffness = 1e4;
@@ -712,9 +714,9 @@ int main()
         std::vector<std::shared_ptr<spg::solver::BaseSolver>> solvers;
 
         // Stuff for picking
-        std::unordered_map<const polyscope::Structure *, spg::SimObject *> polyscopeToObject;
+        std::unordered_map<const polyscope::Structure *, spg::ParticleGroup *> polyscopeToObject;
         std::shared_ptr<spg::SpringAnchorEnergy> currentPickingEnergy;
-        spg::SimObject *currentPickedObject = nullptr;
+        spg::ParticleGroup *currentPickedObject = nullptr;
         int currentPickedParticleId = -1;
         float currentPickedDepth = -1;
         spg::Vector3 currentPickedPos;
@@ -797,27 +799,27 @@ int main()
             auto l_updateView = [&solvers]() {
                 for (int solverId = 0; solverId < solvers.size(); ++solverId) {
                     const auto &solver = solvers[solverId];
-                    for (int i = 0; i < solver->simObjects().size(); ++i) {
+                    for (int i = 0; i < solver->particleGroups().size(); ++i) {
                         auto *pc = polyscope::getPointCloud("solver" + std::to_string(solverId) + "simObj" +
                                                             std::to_string(i));
-                        pc->updatePointPositions(solver->simObjects()[i].positions());
+                        pc->updatePointPositions(solver->particleGroups()[i].positions());
                         if (polyscope::hasCurveNetwork("solver" + std::to_string(solverId) + "simObj" +
                                                        std::to_string(i) + "springs")) {
                             auto *cn = polyscope::getCurveNetwork("solver" + std::to_string(solverId) + "simObj" +
                                                                   std::to_string(i) + "springs");
-                            cn->updateNodePositions(solver->simObjects()[i].positions());
+                            cn->updateNodePositions(solver->particleGroups()[i].positions());
                         }
                         if (polyscope::hasSurfaceMesh("solver" + std::to_string(solverId) + "simObj" +
                                                       std::to_string(i) + "membrane")) {
                             auto *sm = polyscope::getSurfaceMesh("solver" + std::to_string(solverId) + "simObj" +
                                                                  std::to_string(i) + "membrane");
-                            sm->updateVertexPositions(solver->simObjects()[i].positions());
+                            sm->updateVertexPositions(solver->particleGroups()[i].positions());
                         }
                         if (polyscope::hasVolumeMesh("solver" + std::to_string(solverId) + "simObj" +
                                                      std::to_string(i) + "fem")) {
                             auto *vm = polyscope::getVolumeMesh("solver" + std::to_string(solverId) + "simObj" +
                                                                 std::to_string(i) + "fem");
-                            vm->updateVertexPositions(solver->simObjects()[i].positions());
+                            vm->updateVertexPositions(solver->particleGroups()[i].positions());
                         }
                     }
                     for (int i = 0; i < solver->rbGroups().size(); ++i) {
@@ -882,8 +884,8 @@ int main()
                 }
             };
             auto l_registerSolver = [&polyscopeToObject](auto &solver, int solverId) {
-                for (int i = 0; i < solver->simObjects().size(); ++i) {
-                    auto &obj = solver->simObjects()[i];
+                for (int i = 0; i < solver->particleGroups().size(); ++i) {
+                    auto &obj = solver->particleGroups()[i];
                     polyscope::PointCloud *pc = polyscope::registerPointCloud(
                         "solver" + std::to_string(solverId) + "simObj" + std::to_string(i), obj.positions());
                     pc->setPointRadius(0.01);
@@ -1024,7 +1026,7 @@ int main()
                 }
             };
             auto l_unregisterSolver = [](const auto &solver, int solverId) {
-                for (int i = 0; i < solver->simObjects().size(); ++i) {
+                for (int i = 0; i < solver->particleGroups().size(); ++i) {
                     polyscope::removePointCloud("solver" + std::to_string(solverId) + "simObj" + std::to_string(i));
                     polyscope::removeCurveNetwork("solver" + std::to_string(solverId) + "simObj" + std::to_string(i) +
                                                   "springs");
@@ -1222,7 +1224,7 @@ int main()
             }
             if (ImGui::Button("Double mass")) {
                 for (auto &solver : solvers) {
-                    for (auto &obj : solver->simObjects()) {
+                    for (auto &obj : solver->particleGroups()) {
                         obj.scaleMasses(2);
                     }
                     for (auto &obj : solver->rbGroups()) {
@@ -1233,7 +1235,7 @@ int main()
             ImGui::SameLine();
             if (ImGui::Button("Halve mass")) {
                 for (auto &solver : solvers) {
-                    for (auto &obj : solver->simObjects()) {
+                    for (auto &obj : solver->particleGroups()) {
                         obj.scaleMasses(0.5);
                     }
                     for (auto &obj : solver->rbGroups()) {
@@ -1260,12 +1262,12 @@ int main()
                 // Assume there is a single simObject per solver, just to simplify
                 // Note: If the solvers require additional info to work properly (e.g., BDF2 requires info about the
                 // previous step), just copying the current state can lead to weird behaviors
-                if (!solvers.front()->simObjects().empty()) {
-                    const auto &positions = solvers.front()->simObjects().front().positions();
-                    const auto &velocities = solvers.front()->simObjects().front().velocities();
+                if (!solvers.front()->particleGroups().empty()) {
+                    const auto &positions = solvers.front()->particleGroups().front().positions();
+                    const auto &velocities = solvers.front()->particleGroups().front().velocities();
                     for (auto &solver : solvers) {
-                        solver->simObjects().front().positions() = positions;
-                        solver->simObjects().front().velocities() = velocities;
+                        solver->particleGroups().front().positions() = positions;
+                        solver->particleGroups().front().velocities() = velocities;
                     }
                 }
                 if (!solvers.front()->rbGroups().empty()) {

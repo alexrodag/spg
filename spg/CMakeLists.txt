@@ -8,7 +8,7 @@ set(USE_MSHIO FALSE)
 add_library(${PROJECT_NAME})
 
 file(GLOB SRCF
-source/sim/*.cpp
+source/sim/simObject/*.cpp
 source/sim/solver/*.cpp
 source/sim/energy/*.cpp
 source/geom/io/*.cpp
@@ -16,7 +16,7 @@ source/utils/*.cpp
 )
 
 file(GLOB INCF
-include/spg/sim/*.h
+include/spg/sim/simObject/*.h
 include/spg/sim/energy/*.h
 include/spg/sim/solver/*.h
 include/spg/geom/*.h

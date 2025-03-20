@@ -7,7 +7,7 @@ namespace spg
 {
 template <class TSimObject>
 class Energy;
-class SimObject;
+class ParticleGroup;
 
 namespace solver
 {

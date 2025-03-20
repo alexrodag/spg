@@ -1,5 +1,5 @@
 #include <spg/sim/energy/stableSquaredNeoHookeanEnergy.h>
-#include <spg/sim/simObject.h>
+#include <spg/sim/simObject/particleGroup.h>
 #include <cmath>
 
 namespace spg
@@ -7,7 +7,7 @@ namespace spg
 namespace
 {
 auto l_stableNeoHookeanSquaredConstraint =
-    [](const StableSquaredNeoHookeanEnergy *energy, const int i, const SimObject &obj, auto &dC) {
+    [](const StableSquaredNeoHookeanEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
         const auto &x0p{obj.positions()[energy->stencils()[i][0]]};
         const auto &x1p{obj.positions()[energy->stencils()[i][1]]};
         const auto &x2p{obj.positions()[energy->stencils()[i][2]]};
@@ -49,7 +49,7 @@ void StableSquaredNeoHookeanEnergy::addStencil(const std::array<int, s_stencilSi
     m_effectiveCompliance.emplace_back(C.inverse());
 }
 
-void StableSquaredNeoHookeanEnergy::preparePrecomputations(const SimObject &obj)
+void StableSquaredNeoHookeanEnergy::preparePrecomputations(const ParticleGroup &obj)
 {
     const int nstencils{static_cast<int>(m_stencils.size())};
     m_inverseReferenceMat.resize(nstencils);
@@ -77,12 +77,12 @@ void StableSquaredNeoHookeanEnergy::preparePrecomputations(const SimObject &obj)
     StencilBlockEnergy<4, 2>::preparePrecomputations(obj);
 }
 
-void StableSquaredNeoHookeanEnergy::dConstraints(int i, const SimObject &obj, ConstraintsAD1 &dC) const
+void StableSquaredNeoHookeanEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
 {
     l_stableNeoHookeanSquaredConstraint(this, i, obj, dC);
 }
 
-void StableSquaredNeoHookeanEnergy::dConstraints(int i, const SimObject &obj, ConstraintsAD2 &dC) const
+void StableSquaredNeoHookeanEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
 {
     l_stableNeoHookeanSquaredConstraint(this, i, obj, dC);
 }

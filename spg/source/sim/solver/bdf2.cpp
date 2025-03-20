@@ -1,7 +1,7 @@
 #include <spg/sim/solver/bdf2.h>
 #include <spg/sim/energy/energy.h>
-#include <spg/sim/simObject.h>
-#include <spg/sim/rigidBodyGroup.h>
+#include <spg/sim/simObject/particleGroup.h>
+#include <spg/sim/simObject/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
 
 #include <iostream>
@@ -19,7 +19,7 @@ void BDF2::step()
     const Real dt = m_dtStep / m_nsubsteps;
     // Compute total DOFs
     int accumulatedNDOF = 0;
-    for (const auto &object : std::get<std::vector<SimObject>>(m_objects)) {
+    for (const auto &object : std::get<std::vector<ParticleGroup>>(m_objects)) {
         accumulatedNDOF += object.nDOF();
     }
     const int totalNDOF{accumulatedNDOF};

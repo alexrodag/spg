@@ -1,12 +1,12 @@
 #include <spg/sim/energy/discreteBendingEnergy.h>
-#include <spg/sim/simObject.h>
+#include <spg/sim/simObject/particleGroup.h>
 #include <cmath>
 
 namespace spg
 {
 namespace
 {
-auto l_bendingConstraint = [](const DiscreteBendingEnergy *energy, const int i, const SimObject &obj, auto &dC) {
+auto l_bendingConstraint = [](const DiscreteBendingEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
     const auto &x0p{obj.positions()[energy->stencils()[i][0]]};
     const auto &x1p{obj.positions()[energy->stencils()[i][1]]};
     const auto &x2p{obj.positions()[energy->stencils()[i][2]]};
@@ -45,7 +45,7 @@ void DiscreteBendingEnergy::addStencil(const std::array<int, s_stencilSize> &ste
     m_effectiveCompliance.push_back(m_effectiveStiffness.back().inverse());
 }
 
-void DiscreteBendingEnergy::preparePrecomputations(const SimObject &obj)
+void DiscreteBendingEnergy::preparePrecomputations(const ParticleGroup &obj)
 {
     const int nstencils{static_cast<int>(m_stencils.size())};
     for (int i = 0; i < nstencils; ++i) {
@@ -71,11 +71,11 @@ void DiscreteBendingEnergy::preparePrecomputations(const SimObject &obj)
     StencilBlockEnergy<4>::preparePrecomputations(obj);
 }
 
-void DiscreteBendingEnergy::dConstraints(int i, const SimObject &obj, ConstraintsAD1 &dC) const
+void DiscreteBendingEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
 {
     l_bendingConstraint(this, i, obj, dC);
 }
-void DiscreteBendingEnergy::dConstraints(int i, const SimObject &obj, ConstraintsAD2 &dC) const
+void DiscreteBendingEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
 {
     l_bendingConstraint(this, i, obj, dC);
 }

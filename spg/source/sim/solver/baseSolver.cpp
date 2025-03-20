@@ -1,6 +1,6 @@
 #include <spg/sim/solver/baseSolver.h>
-#include <spg/sim/simObject.h>
-#include <spg/sim/rigidBodyGroup.h>
+#include <spg/sim/simObject/particleGroup.h>
+#include <spg/sim/simObject/rigidBodyGroup.h>
 #include <spg/utils/functionalUtilities.h>
 
 #include <iostream>
@@ -31,6 +31,6 @@ void BaseSolver::reset()
         m_objects);
 }
 
-template void BaseSolver::addObject(const SimObject &object);
+template void BaseSolver::addObject(const ParticleGroup &object);
 template void BaseSolver::addObject(const RigidBodyGroup &object);
 }  // namespace spg::solver

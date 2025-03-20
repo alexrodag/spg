@@ -1,12 +1,12 @@
 #include <spg/sim/energy/stvkEnergy.h>
-#include <spg/sim/simObject.h>
+#include <spg/sim/simObject/particleGroup.h>
 #include <cmath>
 
 namespace spg
 {
 namespace
 {
-auto l_stvkConstraint = [](const StvkEnergy *energy, const int i, const SimObject &obj, auto &dC) {
+auto l_stvkConstraint = [](const StvkEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
     const auto &x0p{obj.positions()[energy->stencils()[i][0]]};
     const auto &x1p{obj.positions()[energy->stencils()[i][1]]};
     const auto &x2p{obj.positions()[energy->stencils()[i][2]]};
@@ -38,7 +38,7 @@ auto l_stvkConstraint = [](const StvkEnergy *energy, const int i, const SimObjec
     }
 };
 
-auto l_stvkEnergy = [](const StvkEnergy *energy, const int i, const SimObject &obj, auto &dE) {
+auto l_stvkEnergy = [](const StvkEnergy *energy, const int i, const ParticleGroup &obj, auto &dE) {
     const auto &x0p{obj.positions()[energy->stencils()[i][0]]};
     const auto &x1p{obj.positions()[energy->stencils()[i][1]]};
     const auto &x2p{obj.positions()[energy->stencils()[i][2]]};
@@ -81,7 +81,7 @@ void StvkEnergy::addStencil(const std::array<int, s_stencilSize> &stencil, const
     m_effectiveCompliance.emplace_back(C.inverse());
 }
 
-void StvkEnergy::preparePrecomputations(const SimObject &obj)
+void StvkEnergy::preparePrecomputations(const ParticleGroup &obj)
 {
     const int nstencils{static_cast<int>(m_stencils.size())};
     m_inverseReferenceMat.resize(nstencils);
@@ -109,22 +109,22 @@ void StvkEnergy::preparePrecomputations(const SimObject &obj)
     StencilBlockEnergy<4, 2>::preparePrecomputations(obj);
 }
 
-void StvkEnergy::dConstraints(int i, const SimObject &obj, ConstraintsAD1 &dC) const
+void StvkEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
 {
     l_stvkConstraint(this, i, obj, dC);
 }
 
-void StvkEnergy::dConstraints(int i, const SimObject &obj, ConstraintsAD2 &dC) const
+void StvkEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
 {
     l_stvkConstraint(this, i, obj, dC);
 }
 
-void StvkEnergy::dEnergy(int i, const SimObject &obj, RealAD1 &dE) const
+void StvkEnergy::dEnergy(int i, const ParticleGroup &obj, RealAD1 &dE) const
 {
     l_stvkEnergy(this, i, obj, dE);
 }
 
-void StvkEnergy::dEnergy(int i, const SimObject &obj, RealAD2 &dE) const
+void StvkEnergy::dEnergy(int i, const ParticleGroup &obj, RealAD2 &dE) const
 {
     l_stvkEnergy(this, i, obj, dE);
 }
