@@ -6,11 +6,11 @@ namespace spg
 {
 namespace
 {
-auto l_bendingConstraint = [](const DiscreteBendingEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
-    const auto &x0p{obj.positions()[energy->stencils()[i][0]]};
-    const auto &x1p{obj.positions()[energy->stencils()[i][1]]};
-    const auto &x2p{obj.positions()[energy->stencils()[i][2]]};
-    const auto &x3p{obj.positions()[energy->stencils()[i][3]]};
+auto l_bendingConstraint = [](const DiscreteBendingEnergy *energy, const int i, const ParticleGroup &pGroup, auto &dC) {
+    const auto &x0p{pGroup.positions()[energy->stencils()[i][0]]};
+    const auto &x1p{pGroup.positions()[energy->stencils()[i][1]]};
+    const auto &x2p{pGroup.positions()[energy->stencils()[i][2]]};
+    const auto &x3p{pGroup.positions()[energy->stencils()[i][3]]};
     using RealT = std::decay_t<decltype(dC[0])>;
     const Vector3T<RealT> x0(RealT(x0p.x(), 0), RealT(x0p.y(), 1), RealT(x0p.z(), 2));
     const Vector3T<RealT> x1(RealT(x1p.x(), 3), RealT(x1p.y(), 4), RealT(x1p.z(), 5));
@@ -45,14 +45,14 @@ void DiscreteBendingEnergy::addStencil(const std::array<int, s_stencilSize> &ste
     m_effectiveCompliance.push_back(m_effectiveStiffness.back().inverse());
 }
 
-void DiscreteBendingEnergy::preparePrecomputations(const ParticleGroup &obj)
+void DiscreteBendingEnergy::preparePrecomputations(const ParticleGroup &pGroup)
 {
     const int nstencils{static_cast<int>(m_stencils.size())};
     for (int i = 0; i < nstencils; ++i) {
-        const auto &x0{obj.positions0()[m_stencils[i][0]]};
-        const auto &x1{obj.positions0()[m_stencils[i][1]]};
-        const auto &x2{obj.positions0()[m_stencils[i][2]]};
-        const auto &x3{obj.positions0()[m_stencils[i][3]]};
+        const auto &x0{pGroup.positions0()[m_stencils[i][0]]};
+        const auto &x1{pGroup.positions0()[m_stencils[i][1]]};
+        const auto &x2{pGroup.positions0()[m_stencils[i][2]]};
+        const auto &x3{pGroup.positions0()[m_stencils[i][3]]};
 
         const Vector3 e0 = x1 - x0;
         const Vector3 e3 = x2 - x1;
@@ -68,16 +68,16 @@ void DiscreteBendingEnergy::preparePrecomputations(const ParticleGroup &obj)
         const Vector3 n2 = -e0.cross(e4).normalized();
         m_restTheta[i] = atan2((n1.cross(n2)).dot(e0.normalized()), n1.dot(n2));
     }
-    StencilBlockEnergy<4>::preparePrecomputations(obj);
+    StencilBlockEnergy<4>::preparePrecomputations(pGroup);
 }
 
-void DiscreteBendingEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
+void DiscreteBendingEnergy::dConstraints(int i, const ParticleGroup &pGroup, ConstraintsAD1 &dC) const
 {
-    l_bendingConstraint(this, i, obj, dC);
+    l_bendingConstraint(this, i, pGroup, dC);
 }
-void DiscreteBendingEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
+void DiscreteBendingEnergy::dConstraints(int i, const ParticleGroup &pGroup, ConstraintsAD2 &dC) const
 {
-    l_bendingConstraint(this, i, obj, dC);
+    l_bendingConstraint(this, i, pGroup, dC);
 }
 
 }  // namespace spg

@@ -13,19 +13,19 @@ spg::Matrix3T<T> skew(const spg::Vector3T<T> &v)
     return vSkew;
 }
 
-auto l_springRBConstraint = [](const SpringRBEnergy *energy, const int i, const RigidBodyGroup &obj, auto &dC) {
-    const auto &x0{obj.positions()[energy->stencils()[i][0]]};
-    const auto &x1{obj.positions()[energy->stencils()[i][1]]};
+auto l_springRBConstraint = [](const SpringRBEnergy *energy, const int i, const RigidBodyGroup &rbGroup, auto &dC) {
+    const auto &x0{rbGroup.positions()[energy->stencils()[i][0]]};
+    const auto &x1{rbGroup.positions()[energy->stencils()[i][1]]};
     using RealT = std::decay_t<decltype(dC[0])>;
     const Vector3T<RealT> com0(RealT(x0.x(), 0), RealT(x0.y(), 1), RealT(x0.z(), 2));
     const Vector3T<RealT> theta0(RealT(0, 3), RealT(0, 4), RealT(0, 5));
     const Vector3T<RealT> com1(RealT(x1.x(), 6), RealT(x1.y(), 7), RealT(x1.z(), 8));
     const Vector3T<RealT> theta1(RealT(0, 9), RealT(0, 10), RealT(0, 11));
     const Vector3T<RealT> globalRBPoint0 = com0 + (Matrix3::Identity() + skew(theta0)) *
-                                                      obj.rotationMatrices()[energy->stencils()[i][0]] *
+                                                      rbGroup.rotationMatrices()[energy->stencils()[i][0]] *
                                                       energy->localRBPoints()[i][0];
     const Vector3T<RealT> globalRBPoint1 = com1 + (Matrix3::Identity() + skew(theta1)) *
-                                                      obj.rotationMatrices()[energy->stencils()[i][1]] *
+                                                      rbGroup.rotationMatrices()[energy->stencils()[i][1]] *
                                                       energy->localRBPoints()[i][1];
     const Real L0 = energy->restLengths()[i];
     dC[0] = (globalRBPoint0 - globalRBPoint1).norm() - L0;
@@ -49,13 +49,13 @@ void SpringRBEnergy::addStencil(std::array<int, s_stencilSize> stencil,
     m_effectiveCompliance.push_back(m_effectiveStiffness.back().inverse());
 }
 
-void SpringRBEnergy::dConstraints(const int i, const RigidBodyGroup &obj, ConstraintsAD1 &dC) const
+void SpringRBEnergy::dConstraints(const int i, const RigidBodyGroup &rbGroup, ConstraintsAD1 &dC) const
 {
-    l_springRBConstraint(this, i, obj, dC);
+    l_springRBConstraint(this, i, rbGroup, dC);
 }
 
-void SpringRBEnergy::dConstraints(const int i, const RigidBodyGroup &obj, ConstraintsAD2 &dC) const
+void SpringRBEnergy::dConstraints(const int i, const RigidBodyGroup &rbGroup, ConstraintsAD2 &dC) const
 {
-    l_springRBConstraint(this, i, obj, dC);
+    l_springRBConstraint(this, i, rbGroup, dC);
 }
 }  // namespace spg

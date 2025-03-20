@@ -5,8 +5,8 @@ namespace spg
 {
 namespace
 {
-auto l_springConstraint = [](const SpringAnchorEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
-    const auto &x0{obj.positions()[energy->stencils()[i][0]]};
+auto l_springConstraint = [](const SpringAnchorEnergy *energy, const int i, const ParticleGroup &pGroup, auto &dC) {
+    const auto &x0{pGroup.positions()[energy->stencils()[i][0]]};
     using RealT = std::decay_t<decltype(dC[0])>;
     const Vector3T<RealT> x(RealT(x0.x(), 0), RealT(x0.y(), 1), RealT(x0.z(), 2));
     dC[0] = (x - energy->anchors()[i]).norm();
@@ -18,8 +18,8 @@ auto l_springConstraint = [](const SpringAnchorEnergy *energy, const int i, cons
     }
 };
 
-auto l_springEnergy = [](const SpringAnchorEnergy *energy, const int i, const ParticleGroup &obj, auto &dE) {
-    const auto &x0{obj.positions()[energy->stencils()[i][0]]};
+auto l_springEnergy = [](const SpringAnchorEnergy *energy, const int i, const ParticleGroup &pGroup, auto &dE) {
+    const auto &x0{pGroup.positions()[energy->stencils()[i][0]]};
     using RealT = std::decay_t<decltype(dE)>;
     const Vector3T<RealT> x(RealT(x0.x(), 0), RealT(x0.y(), 1), RealT(x0.z(), 2));
     dE = 0.5 * energy->modelStiffness()[i][0] * (x - energy->anchors()[i]).squaredNorm();
@@ -38,24 +38,24 @@ void SpringAnchorEnergy::addStencil(std::array<int, s_stencilSize> stencil,
     m_anchor.push_back(anchor);
 }
 
-void SpringAnchorEnergy::dEnergy(const int i, const ParticleGroup &obj, RealAD1 &dC) const
+void SpringAnchorEnergy::dEnergy(const int i, const ParticleGroup &pGroup, RealAD1 &dC) const
 {
-    l_springEnergy(this, i, obj, dC);
+    l_springEnergy(this, i, pGroup, dC);
 }
 
-void SpringAnchorEnergy::dEnergy(const int i, const ParticleGroup &obj, RealAD2 &dC) const
+void SpringAnchorEnergy::dEnergy(const int i, const ParticleGroup &pGroup, RealAD2 &dC) const
 {
-    l_springEnergy(this, i, obj, dC);
+    l_springEnergy(this, i, pGroup, dC);
 }
 
-void SpringAnchorEnergy::dConstraints(const int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
+void SpringAnchorEnergy::dConstraints(const int i, const ParticleGroup &pGroup, ConstraintsAD1 &dC) const
 {
-    l_springConstraint(this, i, obj, dC);
+    l_springConstraint(this, i, pGroup, dC);
 }
 
-void SpringAnchorEnergy::dConstraints(const int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
+void SpringAnchorEnergy::dConstraints(const int i, const ParticleGroup &pGroup, ConstraintsAD2 &dC) const
 {
-    l_springConstraint(this, i, obj, dC);
+    l_springConstraint(this, i, pGroup, dC);
 }
 
 }  // namespace spg

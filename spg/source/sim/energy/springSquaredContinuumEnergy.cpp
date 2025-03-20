@@ -6,9 +6,9 @@ namespace spg
 namespace
 {
 auto l_springConstraint =
-    [](const SpringSquaredContinuumEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
-        const auto &x0{obj.positions()[energy->stencils()[i][0]]};
-        const auto &x1{obj.positions()[energy->stencils()[i][1]]};
+    [](const SpringSquaredContinuumEnergy *energy, const int i, const ParticleGroup &pGroup, auto &dC) {
+        const auto &x0{pGroup.positions()[energy->stencils()[i][0]]};
+        const auto &x1{pGroup.positions()[energy->stencils()[i][1]]};
         using RealT = std::decay_t<decltype(dC[0])>;
         const Vector3T<RealT> x(RealT(x0.x(), 0), RealT(x0.y(), 1), RealT(x0.z(), 2));
         const Vector3T<RealT> y(RealT(x1.x(), 3), RealT(x1.y(), 4), RealT(x1.z(), 5));
@@ -33,13 +33,13 @@ void SpringSquaredContinuumEnergy::addStencil(const std::array<int, s_stencilSiz
     m_effectiveCompliance.push_back(m_effectiveStiffness.back().inverse());
 }
 
-void SpringSquaredContinuumEnergy::dConstraints(const int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
+void SpringSquaredContinuumEnergy::dConstraints(const int i, const ParticleGroup &pGroup, ConstraintsAD1 &dC) const
 {
-    l_springConstraint(this, i, obj, dC);
+    l_springConstraint(this, i, pGroup, dC);
 }
 
-void SpringSquaredContinuumEnergy::dConstraints(const int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
+void SpringSquaredContinuumEnergy::dConstraints(const int i, const ParticleGroup &pGroup, ConstraintsAD2 &dC) const
 {
-    l_springConstraint(this, i, obj, dC);
+    l_springConstraint(this, i, pGroup, dC);
 }
 }  // namespace spg

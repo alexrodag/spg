@@ -6,26 +6,27 @@ namespace spg
 {
 namespace
 {
-auto l_bendingConstraint = [](const QuadraticBendingEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
-    const auto &x0p{obj.positions()[energy->stencils()[i][0]]};
-    const auto &x1p{obj.positions()[energy->stencils()[i][1]]};
-    const auto &x2p{obj.positions()[energy->stencils()[i][2]]};
-    const auto &x3p{obj.positions()[energy->stencils()[i][3]]};
-    using RealT = std::decay_t<decltype(dC[0])>;
-    const VectorT<RealT, 12> x(RealT(x0p.x(), 0),
-                               RealT(x0p.y(), 1),
-                               RealT(x0p.z(), 2),
-                               RealT(x1p.x(), 3),
-                               RealT(x1p.y(), 4),
-                               RealT(x1p.z(), 5),
-                               RealT(x2p.x(), 6),
-                               RealT(x2p.y(), 7),
-                               RealT(x2p.z(), 8),
-                               RealT(x3p.x(), 9),
-                               RealT(x3p.y(), 10),
-                               RealT(x3p.z(), 11));
-    dC = (energy->laplacians()[i] * x).eval();
-};
+auto l_bendingConstraint =
+    [](const QuadraticBendingEnergy *energy, const int i, const ParticleGroup &pGroup, auto &dC) {
+        const auto &x0p{pGroup.positions()[energy->stencils()[i][0]]};
+        const auto &x1p{pGroup.positions()[energy->stencils()[i][1]]};
+        const auto &x2p{pGroup.positions()[energy->stencils()[i][2]]};
+        const auto &x3p{pGroup.positions()[energy->stencils()[i][3]]};
+        using RealT = std::decay_t<decltype(dC[0])>;
+        const VectorT<RealT, 12> x(RealT(x0p.x(), 0),
+                                   RealT(x0p.y(), 1),
+                                   RealT(x0p.z(), 2),
+                                   RealT(x1p.x(), 3),
+                                   RealT(x1p.y(), 4),
+                                   RealT(x1p.z(), 5),
+                                   RealT(x2p.x(), 6),
+                                   RealT(x2p.y(), 7),
+                                   RealT(x2p.z(), 8),
+                                   RealT(x3p.x(), 9),
+                                   RealT(x3p.y(), 10),
+                                   RealT(x3p.z(), 11));
+        dC = (energy->laplacians()[i] * x).eval();
+    };
 }
 
 void QuadraticBendingEnergy::addStencil(const std::array<int, s_stencilSize> &stencil,
@@ -45,14 +46,14 @@ void QuadraticBendingEnergy::addStencil(const std::array<int, s_stencilSize> &st
     m_effectiveStiffness.push_back(StiffnessMat{});
 }
 
-void QuadraticBendingEnergy::preparePrecomputations(const ParticleGroup &obj)
+void QuadraticBendingEnergy::preparePrecomputations(const ParticleGroup &pGroup)
 {
     const int nstencils{static_cast<int>(m_stencils.size())};
     for (int i = 0; i < nstencils; ++i) {
-        const auto &x0{obj.positions0()[m_stencils[i][0]]};
-        const auto &x1{obj.positions0()[m_stencils[i][1]]};
-        const auto &x2{obj.positions0()[m_stencils[i][2]]};
-        const auto &x3{obj.positions0()[m_stencils[i][3]]};
+        const auto &x0{pGroup.positions0()[m_stencils[i][0]]};
+        const auto &x1{pGroup.positions0()[m_stencils[i][1]]};
+        const auto &x2{pGroup.positions0()[m_stencils[i][2]]};
+        const auto &x3{pGroup.positions0()[m_stencils[i][3]]};
 
         const Vector3 e0 = x1 - x0;
         const Vector3 e1 = x2 - x0;
@@ -88,16 +89,16 @@ void QuadraticBendingEnergy::preparePrecomputations(const ParticleGroup &obj)
         m_effectiveCompliance[i] = M_inverse.inverse();
         m_modelCompliance[i] = m_effectiveCompliance[i];
     }
-    StencilBlockEnergy<4, 3>::preparePrecomputations(obj);
+    StencilBlockEnergy<4, 3>::preparePrecomputations(pGroup);
 }
 
-void QuadraticBendingEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
+void QuadraticBendingEnergy::dConstraints(int i, const ParticleGroup &pGroup, ConstraintsAD1 &dC) const
 {
-    l_bendingConstraint(this, i, obj, dC);
+    l_bendingConstraint(this, i, pGroup, dC);
 }
-void QuadraticBendingEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
+void QuadraticBendingEnergy::dConstraints(int i, const ParticleGroup &pGroup, ConstraintsAD2 &dC) const
 {
-    l_bendingConstraint(this, i, obj, dC);
+    l_bendingConstraint(this, i, pGroup, dC);
 }
 
 }  // namespace spg
