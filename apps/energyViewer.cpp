@@ -19,121 +19,121 @@
 
 spg::ParticleGroup createStvkObject()
 {
-    spg::ParticleGroup obj;
-    obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
-    obj.addParticle({1, 0, 0}, {1, 0, 0}, 1);
-    obj.addParticle({0, 1, 0}, {0, 1, 0}, 1);
+    spg::ParticleGroup pGroup;
+    pGroup.addParticle({0, 0, 0}, {0, 0, 0}, 1);
+    pGroup.addParticle({1, 0, 0}, {1, 0, 0}, 1);
+    pGroup.addParticle({0, 1, 0}, {0, 1, 0}, 1);
     auto stvkEnergy = std::make_shared<spg::MembraneStvkEnergy>();
     stvkEnergy->addStencil({0, 1, 2}, 1, 0);
-    obj.addEnergy(stvkEnergy);
-    stvkEnergy->preparePrecomputations(obj);
-    return obj;
+    pGroup.addEnergy(stvkEnergy);
+    stvkEnergy->preparePrecomputations(pGroup);
+    return pGroup;
 }
 
 spg::ParticleGroup createBaraffWitkinObject()
 {
-    spg::ParticleGroup obj;
-    obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
-    obj.addParticle({1, 0, 0}, {1, 0, 0}, 1);
-    obj.addParticle({0, 1, 0}, {0, 1, 0}, 1);
+    spg::ParticleGroup pGroup;
+    pGroup.addParticle({0, 0, 0}, {0, 0, 0}, 1);
+    pGroup.addParticle({1, 0, 0}, {1, 0, 0}, 1);
+    pGroup.addParticle({0, 1, 0}, {0, 1, 0}, 1);
     auto stvkEnergy = std::make_shared<spg::MembraneBaraffWitkinEnergy>();
     stvkEnergy->addStencil({0, 1, 2}, 1, 1, 1);
-    obj.addEnergy(stvkEnergy);
-    stvkEnergy->preparePrecomputations(obj);
-    return obj;
+    pGroup.addEnergy(stvkEnergy);
+    stvkEnergy->preparePrecomputations(pGroup);
+    return pGroup;
 }
 
 spg::ParticleGroup createChoiObject()
 {
-    spg::ParticleGroup obj;
-    obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
-    obj.addParticle({1, 0, 0}, {1, 0, 0}, 1);
-    obj.addParticle({0, 1, 0}, {0, 1, 0}, 1);
+    spg::ParticleGroup pGroup;
+    pGroup.addParticle({0, 0, 0}, {0, 0, 0}, 1);
+    pGroup.addParticle({1, 0, 0}, {1, 0, 0}, 1);
+    pGroup.addParticle({0, 1, 0}, {0, 1, 0}, 1);
     auto stvkEnergy = std::make_shared<spg::MembraneChoiEnergy>();
     stvkEnergy->addStencil({0, 1, 2}, 1, 1, 1);
-    obj.addEnergy(stvkEnergy);
-    stvkEnergy->preparePrecomputations(obj);
-    return obj;
+    pGroup.addEnergy(stvkEnergy);
+    stvkEnergy->preparePrecomputations(pGroup);
+    return pGroup;
 }
 
 spg::ParticleGroup createDiscreteBendingObject()
 {
-    spg::ParticleGroup obj;
-    obj.addParticle({1, 0, 1}, {1, -1, 0}, 1);
-    obj.addParticle({1, 0, -1}, {1, 1, 0}, 1);
-    obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
-    obj.addParticle({2, 0, 0}, {2, 0, 0}, 1);
+    spg::ParticleGroup pGroup;
+    pGroup.addParticle({1, 0, 1}, {1, -1, 0}, 1);
+    pGroup.addParticle({1, 0, -1}, {1, 1, 0}, 1);
+    pGroup.addParticle({0, 0, 0}, {0, 0, 0}, 1);
+    pGroup.addParticle({2, 0, 0}, {2, 0, 0}, 1);
     auto bendingEnergy = std::make_shared<spg::DiscreteBendingEnergy>();
     bendingEnergy->addStencil({0, 1, 2, 3}, 0, 1);
-    obj.addEnergy(bendingEnergy);
-    bendingEnergy->preparePrecomputations(obj);
-    return obj;
+    pGroup.addEnergy(bendingEnergy);
+    bendingEnergy->preparePrecomputations(pGroup);
+    return pGroup;
 }
 
 spg::ParticleGroup createBWBendingObject()
 {
-    spg::ParticleGroup obj;
-    obj.addParticle({1, 0, 1}, {1, -1, 0}, 1);
-    obj.addParticle({1, 0, -1}, {1, 1, 0}, 1);
-    obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
-    obj.addParticle({2, 0, 0}, {2, 0, 0}, 1);
+    spg::ParticleGroup pGroup;
+    pGroup.addParticle({1, 0, 1}, {1, -1, 0}, 1);
+    pGroup.addParticle({1, 0, -1}, {1, 1, 0}, 1);
+    pGroup.addParticle({0, 0, 0}, {0, 0, 0}, 1);
+    pGroup.addParticle({2, 0, 0}, {2, 0, 0}, 1);
     auto bendingEnergy = std::make_shared<spg::BaraffWitkinBendingEnergy>();
     bendingEnergy->addStencil({0, 1, 2, 3}, 0, 1);
-    obj.addEnergy(bendingEnergy);
-    bendingEnergy->preparePrecomputations(obj);
-    return obj;
+    pGroup.addEnergy(bendingEnergy);
+    bendingEnergy->preparePrecomputations(pGroup);
+    return pGroup;
 }
 
 spg::ParticleGroup createQuadraticBendingObject()
 {
-    spg::ParticleGroup obj;
-    obj.addParticle({1, 0, 1}, {1, -1, 0}, 1);
-    obj.addParticle({1, 0, -1}, {1, 1, 0}, 1);
-    obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
-    obj.addParticle({2, 0, 0}, {2, 0, 0}, 1);
+    spg::ParticleGroup pGroup;
+    pGroup.addParticle({1, 0, 1}, {1, -1, 0}, 1);
+    pGroup.addParticle({1, 0, -1}, {1, 1, 0}, 1);
+    pGroup.addParticle({0, 0, 0}, {0, 0, 0}, 1);
+    pGroup.addParticle({2, 0, 0}, {2, 0, 0}, 1);
     auto bendingEnergy = std::make_shared<spg::QuadraticBendingEnergy>();
     bendingEnergy->addStencil({0, 1, 2, 3}, 0, 1);
-    obj.addEnergy(bendingEnergy);
-    bendingEnergy->preparePrecomputations(obj);
-    return obj;
+    pGroup.addEnergy(bendingEnergy);
+    bendingEnergy->preparePrecomputations(pGroup);
+    return pGroup;
 }
 
 spg::ParticleGroup createSpringObject()
 {
-    spg::ParticleGroup obj;
-    obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
-    obj.addParticle({1, 0, 0}, {1, 0, 0}, 1);
+    spg::ParticleGroup pGroup;
+    pGroup.addParticle({0, 0, 0}, {0, 0, 0}, 1);
+    pGroup.addParticle({1, 0, 0}, {1, 0, 0}, 1);
     auto springEnergy = std::make_shared<spg::SpringEnergy>();
     springEnergy->addStencil({0, 1}, 1, 1);
-    obj.addEnergy(springEnergy);
-    springEnergy->preparePrecomputations(obj);
-    return obj;
+    pGroup.addEnergy(springEnergy);
+    springEnergy->preparePrecomputations(pGroup);
+    return pGroup;
 }
 
 spg::ParticleGroup createSpringContinuumObject()
 {
-    spg::ParticleGroup obj;
-    obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
-    obj.addParticle({1, 0, 0}, {1, 0, 0}, 1);
+    spg::ParticleGroup pGroup;
+    pGroup.addParticle({0, 0, 0}, {0, 0, 0}, 1);
+    pGroup.addParticle({1, 0, 0}, {1, 0, 0}, 1);
     auto springContinuumEnergy = std::make_shared<spg::SpringContinuumEnergy>();
     springContinuumEnergy->addStencil({0, 1}, 1, 1);
-    obj.addEnergy(springContinuumEnergy);
-    springContinuumEnergy->preparePrecomputations(obj);
-    return obj;
+    pGroup.addEnergy(springContinuumEnergy);
+    springContinuumEnergy->preparePrecomputations(pGroup);
+    return pGroup;
 }
 
 spg::ParticleGroup createStableNeoHookeanObject()
 {
-    spg::ParticleGroup obj;
-    obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
-    obj.addParticle({1, 0, 0}, {1, 0, 0}, 1);
-    obj.addParticle({0, 1, 0}, {0, 1, 0}, 1);
-    obj.addParticle({0, 0, 1}, {0, 0, 1}, 1);
+    spg::ParticleGroup pGroup;
+    pGroup.addParticle({0, 0, 0}, {0, 0, 0}, 1);
+    pGroup.addParticle({1, 0, 0}, {1, 0, 0}, 1);
+    pGroup.addParticle({0, 1, 0}, {0, 1, 0}, 1);
+    pGroup.addParticle({0, 0, 1}, {0, 0, 1}, 1);
     auto stableNeoHookeanEnergy = std::make_shared<spg::StableNeoHookeanEnergy>();
     stableNeoHookeanEnergy->addStencil({0, 1, 2, 3}, 10, 0.2);
-    obj.addEnergy(stableNeoHookeanEnergy);
-    stableNeoHookeanEnergy->preparePrecomputations(obj);
-    return obj;
+    pGroup.addEnergy(stableNeoHookeanEnergy);
+    stableNeoHookeanEnergy->preparePrecomputations(pGroup);
+    return pGroup;
 }
 
 // Polyscope utils

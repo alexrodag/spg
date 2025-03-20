@@ -7,9 +7,9 @@ namespace
 {
 constexpr Real eps{static_cast<Real>(1.0e-6)};  // TODO decide if this should be moved somewhere else
 
-auto l_springConstraint = [](const SpringEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
-    const auto &x0{obj.positions()[energy->stencils()[i][0]]};
-    const auto &x1{obj.positions()[energy->stencils()[i][1]]};
+auto l_springConstraint = [](const SpringEnergy *energy, const int i, const ParticleGroup &pGroup, auto &dC) {
+    const auto &x0{pGroup.positions()[energy->stencils()[i][0]]};
+    const auto &x1{pGroup.positions()[energy->stencils()[i][1]]};
     using RealT = std::decay_t<decltype(dC[0])>;
     const Vector3T<RealT> x(RealT(x0.x(), 0), RealT(x0.y(), 1), RealT(x0.z(), 2));
     const Vector3T<RealT> y(RealT(x1.x(), 3), RealT(x1.y(), 4), RealT(x1.z(), 5));
@@ -17,9 +17,9 @@ auto l_springConstraint = [](const SpringEnergy *energy, const int i, const Part
     dC[0] = (x - y).norm() - L0;
 };
 
-auto l_springEnergy = [](const SpringEnergy *energy, const int i, const ParticleGroup &obj, auto &dE) {
-    const auto &x0{obj.positions()[energy->stencils()[i][0]]};
-    const auto &x1{obj.positions()[energy->stencils()[i][1]]};
+auto l_springEnergy = [](const SpringEnergy *energy, const int i, const ParticleGroup &pGroup, auto &dE) {
+    const auto &x0{pGroup.positions()[energy->stencils()[i][0]]};
+    const auto &x1{pGroup.positions()[energy->stencils()[i][1]]};
     using RealT = std::decay_t<decltype(dE)>;
     const Vector3T<RealT> x(RealT(x0.x(), 0), RealT(x0.y(), 1), RealT(x0.z(), 2));
     const Vector3T<RealT> y(RealT(x1.x(), 3), RealT(x1.y(), 4), RealT(x1.z(), 5));
@@ -45,12 +45,12 @@ void SpringEnergy::addStencil(const std::array<int, s_stencilSize> &stencil,
     m_effectiveCompliance.push_back(m_effectiveStiffness.back().inverse());
 }
 
-void SpringEnergy::projectPosition(const int i, ParticleGroup &obj, const Real dt) const
+void SpringEnergy::projectPosition(const int i, ParticleGroup &pGroup, const Real dt) const
 {
-    auto &x0{obj.positions()[m_stencils[i][0]]};
-    auto &x1{obj.positions()[m_stencils[i][1]]};
-    const auto invMass0{obj.invMasses()[m_stencils[i][0]]};
-    const auto invMass1{obj.invMasses()[m_stencils[i][1]]};
+    auto &x0{pGroup.positions()[m_stencils[i][0]]};
+    auto &x1{pGroup.positions()[m_stencils[i][1]]};
+    const auto invMass0{pGroup.invMasses()[m_stencils[i][0]]};
+    const auto invMass1{pGroup.invMasses()[m_stencils[i][1]]};
     const Real wSum{invMass0 + invMass1};
     if (wSum < eps) {
         return;
@@ -67,30 +67,30 @@ void SpringEnergy::projectPosition(const int i, ParticleGroup &obj, const Real d
     x1 -= invMass1 * corr;
 }
 
-void SpringEnergy::dEnergy(const int i, const ParticleGroup &obj, RealAD1 &dC) const
+void SpringEnergy::dEnergy(const int i, const ParticleGroup &pGroup, RealAD1 &dC) const
 {
-    l_springEnergy(this, i, obj, dC);
+    l_springEnergy(this, i, pGroup, dC);
 }
 
-void SpringEnergy::dEnergy(const int i, const ParticleGroup &obj, RealAD2 &dC) const
+void SpringEnergy::dEnergy(const int i, const ParticleGroup &pGroup, RealAD2 &dC) const
 {
-    l_springEnergy(this, i, obj, dC);
+    l_springEnergy(this, i, pGroup, dC);
 }
 
-void SpringEnergy::dConstraints(const int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
+void SpringEnergy::dConstraints(const int i, const ParticleGroup &pGroup, ConstraintsAD1 &dC) const
 {
-    l_springConstraint(this, i, obj, dC);
+    l_springConstraint(this, i, pGroup, dC);
 }
 
-void SpringEnergy::dConstraints(const int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
+void SpringEnergy::dConstraints(const int i, const ParticleGroup &pGroup, ConstraintsAD2 &dC) const
 {
-    l_springConstraint(this, i, obj, dC);
+    l_springConstraint(this, i, pGroup, dC);
 }
 
-Real SpringEnergy::energy(const int i, const ParticleGroup &obj) const
+Real SpringEnergy::energy(const int i, const ParticleGroup &pGroup) const
 {
-    auto &x0{obj.positions()[m_stencils[i][0]]};
-    auto &x1{obj.positions()[m_stencils[i][1]]};
+    auto &x0{pGroup.positions()[m_stencils[i][0]]};
+    auto &x1{pGroup.positions()[m_stencils[i][1]]};
 
     const Real k = m_effectiveStiffness[i][0];
     const Real L0 = m_restLength[i];
@@ -98,10 +98,10 @@ Real SpringEnergy::energy(const int i, const ParticleGroup &obj) const
     return 0.5 * k * LTerm * LTerm;
 }
 
-SpringEnergy::EnergyGrad SpringEnergy::energyGradient(const int i, const ParticleGroup &obj) const
+SpringEnergy::EnergyGrad SpringEnergy::energyGradient(const int i, const ParticleGroup &pGroup) const
 {
-    const auto &x0{obj.positions()[m_stencils[i][0]]};
-    const auto &x1{obj.positions()[m_stencils[i][1]]};
+    const auto &x0{pGroup.positions()[m_stencils[i][0]]};
+    const auto &x1{pGroup.positions()[m_stencils[i][1]]};
 
     const Real k = m_effectiveStiffness[i][0];
     const Real L0 = m_restLength[i];
@@ -114,10 +114,10 @@ SpringEnergy::EnergyGrad SpringEnergy::energyGradient(const int i, const Particl
     return grad;
 }
 
-SpringEnergy::EnergyHess SpringEnergy::energyHessian(const int i, const ParticleGroup &obj) const
+SpringEnergy::EnergyHess SpringEnergy::energyHessian(const int i, const ParticleGroup &pGroup) const
 {
-    const auto &x0{obj.positions()[m_stencils[i][0]]};
-    const auto &x1{obj.positions()[m_stencils[i][1]]};
+    const auto &x0{pGroup.positions()[m_stencils[i][0]]};
+    const auto &x1{pGroup.positions()[m_stencils[i][1]]};
 
     const Real k = m_effectiveStiffness[i][0];
     const Real L0 = m_restLength[i];

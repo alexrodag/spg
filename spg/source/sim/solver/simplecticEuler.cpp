@@ -15,7 +15,6 @@ void SimplecticEuler::step()
         std::cout << "SimplecticEuler step\n";
     }
     const Real dt = m_dtStep / m_nsubsteps;
-    const int nObjects = static_cast<int>(std::get<std::vector<ParticleGroup>>(m_objects).size());
     Timer timer;
     timer.start();
     for (int s = 0; s < m_nsubsteps; ++s) {

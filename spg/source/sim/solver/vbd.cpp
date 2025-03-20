@@ -21,9 +21,6 @@ void VBD::step()
     const Real invdt = 1. / dt;
     const Real invdtSquared = invdt * invdt;
     constexpr Real epsilon = 1e-10;
-    const int nObjects = static_cast<int>(std::get<std::vector<ParticleGroup>>(m_objects).size());
-    m_simObjectsOldPos.resize(nObjects);
-    m_simObjectsInertialPositions.resize(nObjects);
     if (m_verbosity == Verbosity::Performance) {
         std::cout << "VDB step\n";
     }

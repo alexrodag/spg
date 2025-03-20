@@ -12,11 +12,11 @@ public:
     MembraneStvkEnergy() { m_name = "MembraneStvkEnergy"; }
     void addStencil(const std::array<int, s_stencilSize> &stencil, Real young, Real poisson);
     const std::vector<Matrix2> &inverseReferenceMats() const { return m_inverseReferenceMat; }
-    virtual void preparePrecomputations(const ParticleGroup &obj);
+    virtual void preparePrecomputations(const ParticleGroup &pGroup);
 
 protected:
-    virtual void dConstraints(int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const;
-    virtual void dConstraints(int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const;
+    virtual void dConstraints(int i, const ParticleGroup &pGroup, ConstraintsAD1 &dC) const;
+    virtual void dConstraints(int i, const ParticleGroup &pGroup, ConstraintsAD2 &dC) const;
     std::vector<Matrix2> m_inverseReferenceMat;
 };
 

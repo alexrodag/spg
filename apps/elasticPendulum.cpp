@@ -9,17 +9,17 @@
 
 int main()
 {
-    spg::ParticleGroup obj;
-    obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
-    obj.addParticle({1, 0, 0}, {1, 0, 0}, 1);
+    spg::ParticleGroup pGroup;
+    pGroup.addParticle({0, 0, 0}, {0, 0, 0}, 1);
+    pGroup.addParticle({1, 0, 0}, {1, 0, 0}, 1);
     auto springAnchorEnergy = std::make_shared<spg::SpringAnchorEnergy>();
     auto springEnergy = std::make_shared<spg::SpringEnergy>();
-    springAnchorEnergy->addStencil(std::array<int, 1>{0}, obj.positions0()[0], 1e7);  // anchor the first particle
+    springAnchorEnergy->addStencil(std::array<int, 1>{0}, pGroup.positions0()[0], 1e7);  // anchor the first particle
     springEnergy->addStencil(std::array<int, 2>{0, 1}, 1, 10);  // add spring between the two particles
-    obj.addEnergy(springAnchorEnergy);
-    obj.addEnergy(springEnergy);
+    pGroup.addEnergy(springAnchorEnergy);
+    pGroup.addEnergy(springEnergy);
     spg::solver::ImplicitEulerBaraffWitkin solver;
-    solver.addObject(obj);
+    solver.addObject(pGroup);
     const float dt = 0.1f;
     solver.setDt(dt);
     float time = 0;

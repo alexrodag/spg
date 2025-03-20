@@ -13,8 +13,8 @@ public:
     const std::vector<Real> &restLengths() const { return m_restLength; }
 
 protected:
-    virtual void dConstraints(int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const;
-    virtual void dConstraints(int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const;
+    virtual void dConstraints(int i, const ParticleGroup &pGroup, ConstraintsAD1 &dC) const;
+    virtual void dConstraints(int i, const ParticleGroup &pGroup, ConstraintsAD2 &dC) const;
     std::vector<Real> m_restLength;
 };
 }  // namespace spg

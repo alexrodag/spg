@@ -7,11 +7,11 @@ namespace spg
 namespace
 {
 auto l_stableNeoHookeanConstraint =
-    [](const StableNeoHookeanEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
-        const auto &x0p{obj.positions()[energy->stencils()[i][0]]};
-        const auto &x1p{obj.positions()[energy->stencils()[i][1]]};
-        const auto &x2p{obj.positions()[energy->stencils()[i][2]]};
-        const auto &x3p{obj.positions()[energy->stencils()[i][3]]};
+    [](const StableNeoHookeanEnergy *energy, const int i, const ParticleGroup &pGroup, auto &dC) {
+        const auto &x0p{pGroup.positions()[energy->stencils()[i][0]]};
+        const auto &x1p{pGroup.positions()[energy->stencils()[i][1]]};
+        const auto &x2p{pGroup.positions()[energy->stencils()[i][2]]};
+        const auto &x3p{pGroup.positions()[energy->stencils()[i][3]]};
 
         using RealT = std::decay_t<decltype(dC[0])>;
         const Vector3T<RealT> x0(RealT(x0p.x(), 0), RealT(x0p.y(), 1), RealT(x0p.z(), 2));
@@ -31,11 +31,11 @@ auto l_stableNeoHookeanConstraint =
     };
 
 auto l_stableNeoHookeanEnergy =
-    [](const StableNeoHookeanEnergy *energy, const int i, const ParticleGroup &obj, auto &dE) {
-        const auto &x0p{obj.positions()[energy->stencils()[i][0]]};
-        const auto &x1p{obj.positions()[energy->stencils()[i][1]]};
-        const auto &x2p{obj.positions()[energy->stencils()[i][2]]};
-        const auto &x3p{obj.positions()[energy->stencils()[i][3]]};
+    [](const StableNeoHookeanEnergy *energy, const int i, const ParticleGroup &pGroup, auto &dE) {
+        const auto &x0p{pGroup.positions()[energy->stencils()[i][0]]};
+        const auto &x1p{pGroup.positions()[energy->stencils()[i][1]]};
+        const auto &x2p{pGroup.positions()[energy->stencils()[i][2]]};
+        const auto &x3p{pGroup.positions()[energy->stencils()[i][3]]};
 
         using RealT = std::decay_t<decltype(dE)>;
         const Vector3T<RealT> x0(RealT(x0p.x(), 0), RealT(x0p.y(), 1), RealT(x0p.z(), 2));
@@ -79,15 +79,15 @@ void StableNeoHookeanEnergy::addStencil(const std::array<int, s_stencilSize> &st
     m_hydrostaticCorrectionTerm.emplace_back(1 + mu / lambda);
 }
 
-void StableNeoHookeanEnergy::preparePrecomputations(const ParticleGroup &obj)
+void StableNeoHookeanEnergy::preparePrecomputations(const ParticleGroup &pGroup)
 {
     const int nstencils{static_cast<int>(m_stencils.size())};
     m_inverseReferenceMat.resize(nstencils);
     for (int i = 0; i < nstencils; ++i) {
-        const auto &x0{obj.positions0()[m_stencils[i][0]]};
-        const auto &x1{obj.positions0()[m_stencils[i][1]]};
-        const auto &x2{obj.positions0()[m_stencils[i][2]]};
-        const auto &x3{obj.positions0()[m_stencils[i][3]]};
+        const auto &x0{pGroup.positions0()[m_stencils[i][0]]};
+        const auto &x1{pGroup.positions0()[m_stencils[i][1]]};
+        const auto &x2{pGroup.positions0()[m_stencils[i][2]]};
+        const auto &x3{pGroup.positions0()[m_stencils[i][3]]};
         // compute rest material matrix
         const Vector3 u = x1 - x0;
         const Vector3 v = x2 - x0;
@@ -104,26 +104,26 @@ void StableNeoHookeanEnergy::preparePrecomputations(const ParticleGroup &obj)
         m_effectiveCompliance[i] = m_modelCompliance[i] / volume;
         m_effectiveStiffness[i] = m_modelStiffness[i] * volume;
     }
-    StencilBlockEnergy<4, 2>::preparePrecomputations(obj);
+    StencilBlockEnergy<4, 2>::preparePrecomputations(pGroup);
 }
 
-void StableNeoHookeanEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
+void StableNeoHookeanEnergy::dConstraints(int i, const ParticleGroup &pGroup, ConstraintsAD1 &dC) const
 {
-    l_stableNeoHookeanConstraint(this, i, obj, dC);
+    l_stableNeoHookeanConstraint(this, i, pGroup, dC);
 }
 
-void StableNeoHookeanEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
+void StableNeoHookeanEnergy::dConstraints(int i, const ParticleGroup &pGroup, ConstraintsAD2 &dC) const
 {
-    l_stableNeoHookeanConstraint(this, i, obj, dC);
+    l_stableNeoHookeanConstraint(this, i, pGroup, dC);
 }
 
-void StableNeoHookeanEnergy::dEnergy(int i, const ParticleGroup &obj, RealAD1 &dE) const
+void StableNeoHookeanEnergy::dEnergy(int i, const ParticleGroup &pGroup, RealAD1 &dE) const
 {
-    l_stableNeoHookeanEnergy(this, i, obj, dE);
+    l_stableNeoHookeanEnergy(this, i, pGroup, dE);
 }
 
-void StableNeoHookeanEnergy::dEnergy(int i, const ParticleGroup &obj, RealAD2 &dE) const
+void StableNeoHookeanEnergy::dEnergy(int i, const ParticleGroup &pGroup, RealAD2 &dE) const
 {
-    l_stableNeoHookeanEnergy(this, i, obj, dE);
+    l_stableNeoHookeanEnergy(this, i, pGroup, dE);
 }
 }  // namespace spg

@@ -18,8 +18,8 @@ public:
     const std::vector<Real> &restLengths() const { return m_restLength; }
 
 protected:
-    virtual void dConstraints(int i, const RigidBodyGroup &obj, ConstraintsAD1 &dC) const;
-    virtual void dConstraints(int i, const RigidBodyGroup &obj, ConstraintsAD2 &dC) const;
+    virtual void dConstraints(int i, const RigidBodyGroup &rbGroup, ConstraintsAD1 &dC) const;
+    virtual void dConstraints(int i, const RigidBodyGroup &rbGroup, ConstraintsAD2 &dC) const;
     std::vector<Real> m_restLength;
     std::vector<std::array<Vector3, 2>> m_localRBPoints;
 };

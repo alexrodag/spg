@@ -40,8 +40,6 @@ protected:
     // Member structures to avoid unrequired memory reallocations
     VectorX m_xOld;
     VectorX m_xInertial;
-    std::vector<std::vector<Vector3>> m_simObjectsOldPos;
-    std::vector<std::vector<Vector3>> m_simObjectsInertialPositions;
 };
 }  // namespace solver
 }  // namespace spg

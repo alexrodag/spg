@@ -6,10 +6,10 @@ namespace spg
 {
 namespace
 {
-auto l_choiConstraint = [](const MembraneChoiEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
-    const auto &x0p{obj.positions()[energy->stencils()[i][0]]};
-    const auto &x1p{obj.positions()[energy->stencils()[i][1]]};
-    const auto &x2p{obj.positions()[energy->stencils()[i][2]]};
+auto l_choiConstraint = [](const MembraneChoiEnergy *energy, const int i, const ParticleGroup &pGroup, auto &dC) {
+    const auto &x0p{pGroup.positions()[energy->stencils()[i][0]]};
+    const auto &x1p{pGroup.positions()[energy->stencils()[i][1]]};
+    const auto &x2p{pGroup.positions()[energy->stencils()[i][2]]};
 
     using RealT = std::decay_t<decltype(dC[0])>;
     const Vector3T<RealT> x0(RealT(x0p.x(), 0), RealT(x0p.y(), 1), RealT(x0p.z(), 2));
@@ -42,14 +42,14 @@ void MembraneChoiEnergy::addStencil(const std::array<int, s_stencilSize> &stenci
     m_effectiveCompliance.emplace_back(C.inverse());
 }
 
-void MembraneChoiEnergy::preparePrecomputations(const ParticleGroup &obj)
+void MembraneChoiEnergy::preparePrecomputations(const ParticleGroup &pGroup)
 {
     const int nstencils{static_cast<int>(m_stencils.size())};
     m_inverseReferenceMat.resize(nstencils);
     for (int i = 0; i < nstencils; ++i) {
-        const auto &x0{obj.positions0()[m_stencils[i][0]]};
-        const auto &x1{obj.positions0()[m_stencils[i][1]]};
-        const auto &x2{obj.positions0()[m_stencils[i][2]]};
+        const auto &x0{pGroup.positions0()[m_stencils[i][0]]};
+        const auto &x1{pGroup.positions0()[m_stencils[i][1]]};
+        const auto &x2{pGroup.positions0()[m_stencils[i][2]]};
         if (x0.z() != 0.0 || x1.z() != 0.0 || x2.z() != 0.0) {
             throw std::runtime_error("Rest positions of triangles for membrane Choi energy must have coordinate z=0");
         }
@@ -67,16 +67,16 @@ void MembraneChoiEnergy::preparePrecomputations(const ParticleGroup &obj)
         m_effectiveCompliance[i] = m_modelCompliance[i] / area;
         m_effectiveStiffness[i] = m_modelStiffness[i] * area;
     }
-    StencilBlockEnergy<3, 4>::preparePrecomputations(obj);
+    StencilBlockEnergy<3, 4>::preparePrecomputations(pGroup);
 }
 
-void MembraneChoiEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
+void MembraneChoiEnergy::dConstraints(int i, const ParticleGroup &pGroup, ConstraintsAD1 &dC) const
 {
-    l_choiConstraint(this, i, obj, dC);
+    l_choiConstraint(this, i, pGroup, dC);
 }
 
-void MembraneChoiEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
+void MembraneChoiEnergy::dConstraints(int i, const ParticleGroup &pGroup, ConstraintsAD2 &dC) const
 {
-    l_choiConstraint(this, i, obj, dC);
+    l_choiConstraint(this, i, pGroup, dC);
 }
 }  // namespace spg
