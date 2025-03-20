@@ -1,7 +1,7 @@
 #include <spg/sim/solver/simplecticEuler.h>
 #include <spg/sim/energy/energy.h>
-#include <spg/sim/simObject.h>
-#include <spg/sim/rigidBodyGroup.h>
+#include <spg/sim/simObject/particleGroup.h>
+#include <spg/sim/simObject/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
 #include <spg/utils/functionalUtilities.h>
 
@@ -15,7 +15,7 @@ void SimplecticEuler::step()
         std::cout << "SimplecticEuler step\n";
     }
     const Real dt = m_dtStep / m_nsubsteps;
-    const int nObjects = static_cast<int>(std::get<std::vector<SimObject>>(m_objects).size());
+    const int nObjects = static_cast<int>(std::get<std::vector<ParticleGroup>>(m_objects).size());
     Timer timer;
     timer.start();
     for (int s = 0; s < m_nsubsteps; ++s) {

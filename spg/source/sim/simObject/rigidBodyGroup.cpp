@@ -1,4 +1,4 @@
-#include <spg/sim/rigidBodyGroup.h>
+#include <spg/sim/simObject/rigidBodyGroup.h>
 #include <spg/sim/energy/energy.h>
 
 namespace

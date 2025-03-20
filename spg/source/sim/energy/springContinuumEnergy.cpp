@@ -1,11 +1,11 @@
 #include <spg/sim/energy/springContinuumEnergy.h>
-#include <spg/sim/simObject.h>
+#include <spg/sim/simObject/particleGroup.h>
 
 namespace spg
 {
 namespace
 {
-auto l_springConstraint = [](const SpringContinuumEnergy *energy, const int i, const SimObject &obj, auto &dC) {
+auto l_springConstraint = [](const SpringContinuumEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
     const auto &x0{obj.positions()[energy->stencils()[i][0]]};
     const auto &x1{obj.positions()[energy->stencils()[i][1]]};
     using RealT = std::decay_t<decltype(dC[0])>;
@@ -32,12 +32,12 @@ void SpringContinuumEnergy::addStencil(const std::array<int, s_stencilSize> &ste
     m_effectiveCompliance.push_back(m_effectiveStiffness.back().inverse());
 }
 
-void SpringContinuumEnergy::dConstraints(const int i, const SimObject &obj, ConstraintsAD1 &dC) const
+void SpringContinuumEnergy::dConstraints(const int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
 {
     l_springConstraint(this, i, obj, dC);
 }
 
-void SpringContinuumEnergy::dConstraints(const int i, const SimObject &obj, ConstraintsAD2 &dC) const
+void SpringContinuumEnergy::dConstraints(const int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
 {
     l_springConstraint(this, i, obj, dC);
 }

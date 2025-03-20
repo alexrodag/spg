@@ -1,7 +1,7 @@
 #include <spg/sim/solver/quasiStaticNewton.h>
 #include <spg/sim/energy/energy.h>
-#include <spg/sim/simObject.h>
-#include <spg/sim/rigidBodyGroup.h>
+#include <spg/sim/simObject/particleGroup.h>
+#include <spg/sim/simObject/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
 #include <spg/utils/functionalUtilities.h>
 

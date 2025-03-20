@@ -1,10 +1,10 @@
-#include <spg/sim/simObject.h>
+#include <spg/sim/simObject/particleGroup.h>
 #include <spg/sim/energy/energy.h>
 
 namespace spg
 {
 
-void SimObject::getPositions(VectorX &pos, int offsetIndex) const
+void ParticleGroup::getPositions(VectorX &pos, int offsetIndex) const
 {
     const int nparticles = size();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
@@ -13,7 +13,7 @@ void SimObject::getPositions(VectorX &pos, int offsetIndex) const
     }
 }
 
-void SimObject::getVelocities(VectorX &vel, int offsetIndex) const
+void ParticleGroup::getVelocities(VectorX &vel, int offsetIndex) const
 {
     const int nparticles = size();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
@@ -22,7 +22,7 @@ void SimObject::getVelocities(VectorX &vel, int offsetIndex) const
     }
 }
 
-void SimObject::setPositions(const VectorX &pos, int offsetIndex)
+void ParticleGroup::setPositions(const VectorX &pos, int offsetIndex)
 {
     const int nparticles = size();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
@@ -31,7 +31,7 @@ void SimObject::setPositions(const VectorX &pos, int offsetIndex)
     }
 }
 
-void SimObject::setVelocities(const VectorX &vel, int offsetIndex)
+void ParticleGroup::setVelocities(const VectorX &vel, int offsetIndex)
 {
     const int nparticles = size();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
@@ -40,12 +40,12 @@ void SimObject::setVelocities(const VectorX &vel, int offsetIndex)
     }
 }
 
-void SimObject::updateElementPositionFromDx(const Vector3 &dx, int elementId)
+void ParticleGroup::updateElementPositionFromDx(const Vector3 &dx, int elementId)
 {
     m_x[elementId] += dx;
 }
 
-void SimObject::updatePositionsFromDx(const VectorX &dx, int offsetIndex)
+void ParticleGroup::updatePositionsFromDx(const VectorX &dx, int offsetIndex)
 {
     const int nparticles = size();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
@@ -54,7 +54,7 @@ void SimObject::updatePositionsFromDx(const VectorX &dx, int offsetIndex)
     }
 }
 
-void SimObject::integrateVelocities(Real dt)
+void ParticleGroup::integrateVelocities(Real dt)
 {
     const int nparticles = size();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
@@ -62,7 +62,7 @@ void SimObject::integrateVelocities(Real dt)
     }
 }
 
-void SimObject::computeIntegratedVelocities(const VectorX &oldPos, int offsetIndex, Real invdt)
+void ParticleGroup::computeIntegratedVelocities(const VectorX &oldPos, int offsetIndex, Real invdt)
 {
     const int nparticles = size();
     for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
@@ -71,7 +71,7 @@ void SimObject::computeIntegratedVelocities(const VectorX &oldPos, int offsetInd
     }
 }
 
-void SimObject::addParticle(const Vector3 &p, const Vector3 &p0, const Real mass)
+void ParticleGroup::addParticle(const Vector3 &p, const Vector3 &p0, const Real mass)
 {
     m_x.push_back(p);
     m_xInitial.push_back(p);
@@ -81,12 +81,12 @@ void SimObject::addParticle(const Vector3 &p, const Vector3 &p0, const Real mass
     m_w.push_back(mass == 0 ? 0 : 1 / mass);
 }
 
-void SimObject::addEnergy(std::shared_ptr<EnergyT> energy)
+void ParticleGroup::addEnergy(std::shared_ptr<EnergyT> energy)
 {
     m_energies.push_back(energy);
 }
 
-void SimObject::removeEnergy(std::shared_ptr<EnergyT> energy)
+void ParticleGroup::removeEnergy(std::shared_ptr<EnergyT> energy)
 {
     m_energies.erase(
         std::remove_if(
@@ -94,7 +94,7 @@ void SimObject::removeEnergy(std::shared_ptr<EnergyT> energy)
         m_energies.end());
 }
 
-void SimObject::reset()
+void ParticleGroup::reset()
 {
     m_x = m_xInitial;
     for (auto &v : m_v) {
@@ -102,7 +102,7 @@ void SimObject::reset()
     }
 }
 
-void SimObject::scaleMasses(const Real scaleFactor)
+void ParticleGroup::scaleMasses(const Real scaleFactor)
 {
     for (int i = 0; i < m_m.size(); ++i) {
         if (m_m[i] != 0) {

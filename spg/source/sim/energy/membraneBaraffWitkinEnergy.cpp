@@ -1,5 +1,5 @@
 #include <spg/sim/energy/membraneBaraffWitkinEnergy.h>
-#include <spg/sim/simObject.h>
+#include <spg/sim/simObject/particleGroup.h>
 #include <cmath>
 
 namespace spg
@@ -7,7 +7,7 @@ namespace spg
 namespace
 {
 auto l_baraffWitkinConstraint =
-    [](const MembraneBaraffWitkinEnergy *energy, const int i, const SimObject &obj, auto &dC) {
+    [](const MembraneBaraffWitkinEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
         const auto &x0p{obj.positions()[energy->stencils()[i][0]]};
         const auto &x1p{obj.positions()[energy->stencils()[i][1]]};
         const auto &x2p{obj.positions()[energy->stencils()[i][2]]};
@@ -40,7 +40,7 @@ void MembraneBaraffWitkinEnergy::addStencil(const std::array<int, s_stencilSize>
     m_effectiveCompliance.emplace_back(C.inverse());
 }
 
-void MembraneBaraffWitkinEnergy::preparePrecomputations(const SimObject &obj)
+void MembraneBaraffWitkinEnergy::preparePrecomputations(const ParticleGroup &obj)
 {
     const int nstencils{static_cast<int>(m_stencils.size())};
     m_inverseReferenceMat.resize(nstencils);
@@ -69,12 +69,12 @@ void MembraneBaraffWitkinEnergy::preparePrecomputations(const SimObject &obj)
     StencilBlockEnergy<3, 3>::preparePrecomputations(obj);
 }
 
-void MembraneBaraffWitkinEnergy::dConstraints(int i, const SimObject &obj, ConstraintsAD1 &dC) const
+void MembraneBaraffWitkinEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
 {
     l_baraffWitkinConstraint(this, i, obj, dC);
 }
 
-void MembraneBaraffWitkinEnergy::dConstraints(int i, const SimObject &obj, ConstraintsAD2 &dC) const
+void MembraneBaraffWitkinEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
 {
     l_baraffWitkinConstraint(this, i, obj, dC);
 }

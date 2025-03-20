@@ -5,7 +5,7 @@
 #include <polyscope/pick.h>
 
 #include <spg/types.h>
-#include <spg/sim/simObject.h>
+#include <spg/sim/simObject/particleGroup.h>
 #include <spg/sim/energy/energy.h>
 #include <spg/sim/energy/springEnergy.h>
 #include <spg/sim/energy/springContinuumEnergy.h>
@@ -17,9 +17,9 @@
 #include <spg/sim/energy/membraneChoiEnergy.h>
 #include <spg/sim/energy/stableNeoHookeanEnergy.h>
 
-spg::SimObject createStvkObject()
+spg::ParticleGroup createStvkObject()
 {
-    spg::SimObject obj;
+    spg::ParticleGroup obj;
     obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
     obj.addParticle({1, 0, 0}, {1, 0, 0}, 1);
     obj.addParticle({0, 1, 0}, {0, 1, 0}, 1);
@@ -30,9 +30,9 @@ spg::SimObject createStvkObject()
     return obj;
 }
 
-spg::SimObject createBaraffWitkinObject()
+spg::ParticleGroup createBaraffWitkinObject()
 {
-    spg::SimObject obj;
+    spg::ParticleGroup obj;
     obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
     obj.addParticle({1, 0, 0}, {1, 0, 0}, 1);
     obj.addParticle({0, 1, 0}, {0, 1, 0}, 1);
@@ -43,9 +43,9 @@ spg::SimObject createBaraffWitkinObject()
     return obj;
 }
 
-spg::SimObject createChoiObject()
+spg::ParticleGroup createChoiObject()
 {
-    spg::SimObject obj;
+    spg::ParticleGroup obj;
     obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
     obj.addParticle({1, 0, 0}, {1, 0, 0}, 1);
     obj.addParticle({0, 1, 0}, {0, 1, 0}, 1);
@@ -56,9 +56,9 @@ spg::SimObject createChoiObject()
     return obj;
 }
 
-spg::SimObject createDiscreteBendingObject()
+spg::ParticleGroup createDiscreteBendingObject()
 {
-    spg::SimObject obj;
+    spg::ParticleGroup obj;
     obj.addParticle({1, 0, 1}, {1, -1, 0}, 1);
     obj.addParticle({1, 0, -1}, {1, 1, 0}, 1);
     obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
@@ -70,9 +70,9 @@ spg::SimObject createDiscreteBendingObject()
     return obj;
 }
 
-spg::SimObject createBWBendingObject()
+spg::ParticleGroup createBWBendingObject()
 {
-    spg::SimObject obj;
+    spg::ParticleGroup obj;
     obj.addParticle({1, 0, 1}, {1, -1, 0}, 1);
     obj.addParticle({1, 0, -1}, {1, 1, 0}, 1);
     obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
@@ -84,9 +84,9 @@ spg::SimObject createBWBendingObject()
     return obj;
 }
 
-spg::SimObject createQuadraticBendingObject()
+spg::ParticleGroup createQuadraticBendingObject()
 {
-    spg::SimObject obj;
+    spg::ParticleGroup obj;
     obj.addParticle({1, 0, 1}, {1, -1, 0}, 1);
     obj.addParticle({1, 0, -1}, {1, 1, 0}, 1);
     obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
@@ -98,9 +98,9 @@ spg::SimObject createQuadraticBendingObject()
     return obj;
 }
 
-spg::SimObject createSpringObject()
+spg::ParticleGroup createSpringObject()
 {
-    spg::SimObject obj;
+    spg::ParticleGroup obj;
     obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
     obj.addParticle({1, 0, 0}, {1, 0, 0}, 1);
     auto springEnergy = std::make_shared<spg::SpringEnergy>();
@@ -110,9 +110,9 @@ spg::SimObject createSpringObject()
     return obj;
 }
 
-spg::SimObject createSpringContinuumObject()
+spg::ParticleGroup createSpringContinuumObject()
 {
-    spg::SimObject obj;
+    spg::ParticleGroup obj;
     obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
     obj.addParticle({1, 0, 0}, {1, 0, 0}, 1);
     auto springContinuumEnergy = std::make_shared<spg::SpringContinuumEnergy>();
@@ -122,9 +122,9 @@ spg::SimObject createSpringContinuumObject()
     return obj;
 }
 
-spg::SimObject createStableNeoHookeanObject()
+spg::ParticleGroup createStableNeoHookeanObject()
 {
-    spg::SimObject obj;
+    spg::ParticleGroup obj;
     obj.addParticle({0, 0, 0}, {0, 0, 0}, 1);
     obj.addParticle({1, 0, 0}, {1, 0, 0}, 1);
     obj.addParticle({0, 1, 0}, {0, 1, 0}, 1);

@@ -11,11 +11,11 @@ template <class TSimObject>
 class Energy;
 
 // TODO templatize DOFs per particle
-class SimObject  // TODO: Rename to ParticleGroup or something like that
+class ParticleGroup
 {
 public:
     static constexpr int s_nDOFs = 3;
-    using EnergyT = Energy<SimObject>;
+    using EnergyT = Energy<ParticleGroup>;
 
     const std::vector<Vector3> &positions() const { return m_x; }
     std::vector<Vector3> &positions() { return m_x; }

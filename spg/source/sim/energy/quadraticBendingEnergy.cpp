@@ -1,29 +1,29 @@
 #include <spg/sim/energy/quadraticBendingEnergy.h>
-#include <spg/sim/simObject.h>
+#include <spg/sim/simObject/particleGroup.h>
 #include <cmath>
 
 namespace spg
 {
 namespace
 {
-auto l_bendingConstraint = [](const QuadraticBendingEnergy *energy, const int i, const SimObject &obj, auto &dC) {
+auto l_bendingConstraint = [](const QuadraticBendingEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
     const auto &x0p{obj.positions()[energy->stencils()[i][0]]};
     const auto &x1p{obj.positions()[energy->stencils()[i][1]]};
     const auto &x2p{obj.positions()[energy->stencils()[i][2]]};
     const auto &x3p{obj.positions()[energy->stencils()[i][3]]};
     using RealT = std::decay_t<decltype(dC[0])>;
     const VectorT<RealT, 12> x(RealT(x0p.x(), 0),
-                                 RealT(x0p.y(), 1),
-                                 RealT(x0p.z(), 2),
-                                 RealT(x1p.x(), 3),
-                                 RealT(x1p.y(), 4),
-                                 RealT(x1p.z(), 5),
-                                 RealT(x2p.x(), 6),
-                                 RealT(x2p.y(), 7),
-                                 RealT(x2p.z(), 8),
-                                 RealT(x3p.x(), 9),
-                                 RealT(x3p.y(), 10),
-                                 RealT(x3p.z(), 11));
+                               RealT(x0p.y(), 1),
+                               RealT(x0p.z(), 2),
+                               RealT(x1p.x(), 3),
+                               RealT(x1p.y(), 4),
+                               RealT(x1p.z(), 5),
+                               RealT(x2p.x(), 6),
+                               RealT(x2p.y(), 7),
+                               RealT(x2p.z(), 8),
+                               RealT(x3p.x(), 9),
+                               RealT(x3p.y(), 10),
+                               RealT(x3p.z(), 11));
     dC = (energy->laplacians()[i] * x).eval();
 };
 }
@@ -45,7 +45,7 @@ void QuadraticBendingEnergy::addStencil(const std::array<int, s_stencilSize> &st
     m_effectiveStiffness.push_back(StiffnessMat{});
 }
 
-void QuadraticBendingEnergy::preparePrecomputations(const SimObject &obj)
+void QuadraticBendingEnergy::preparePrecomputations(const ParticleGroup &obj)
 {
     const int nstencils{static_cast<int>(m_stencils.size())};
     for (int i = 0; i < nstencils; ++i) {
@@ -80,8 +80,8 @@ void QuadraticBendingEnergy::preparePrecomputations(const SimObject &obj)
         K.block<3, 3>(3, 0) = c1 * Matrix3::Identity();
         K.block<3, 3>(6, 0) = c2 * Matrix3::Identity();
         K.block<3, 3>(9, 0) = c3 * Matrix3::Identity();
-        const StiffnessMat M_inverse = m_stiffnessFactor[i] * StiffnessMat::Identity() *
-                                        (3 / (0.5 * (e0.cross(e1).norm() + e0.cross(e2).norm())));
+        const StiffnessMat M_inverse =
+            m_stiffnessFactor[i] * StiffnessMat::Identity() * (3 / (0.5 * (e0.cross(e1).norm() + e0.cross(e2).norm())));
         m_laplacians[i] = K.transpose();
         m_effectiveStiffness[i] = M_inverse;
         m_modelStiffness[i] = m_effectiveStiffness[i];
@@ -91,11 +91,11 @@ void QuadraticBendingEnergy::preparePrecomputations(const SimObject &obj)
     StencilBlockEnergy<4, 3>::preparePrecomputations(obj);
 }
 
-void QuadraticBendingEnergy::dConstraints(int i, const SimObject &obj, ConstraintsAD1 &dC) const
+void QuadraticBendingEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
 {
     l_bendingConstraint(this, i, obj, dC);
 }
-void QuadraticBendingEnergy::dConstraints(int i, const SimObject &obj, ConstraintsAD2 &dC) const
+void QuadraticBendingEnergy::dConstraints(int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
 {
     l_bendingConstraint(this, i, obj, dC);
 }

@@ -1,7 +1,7 @@
 #include <spg/sim/solver/vbd.h>
 #include <spg/sim/energy/energy.h>
-#include <spg/sim/simObject.h>
-#include <spg/sim/rigidBodyGroup.h>
+#include <spg/sim/simObject/particleGroup.h>
+#include <spg/sim/simObject/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
 #include <spg/utils/graphColoring.h>
 #include <spg/utils/functionalUtilities.h>
@@ -21,7 +21,7 @@ void VBD::step()
     const Real invdt = 1. / dt;
     const Real invdtSquared = invdt * invdt;
     constexpr Real epsilon = 1e-10;
-    const int nObjects = static_cast<int>(std::get<std::vector<SimObject>>(m_objects).size());
+    const int nObjects = static_cast<int>(std::get<std::vector<ParticleGroup>>(m_objects).size());
     m_simObjectsOldPos.resize(nObjects);
     m_simObjectsInertialPositions.resize(nObjects);
     if (m_verbosity == Verbosity::Performance) {

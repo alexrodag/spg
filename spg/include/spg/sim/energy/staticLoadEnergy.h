@@ -20,10 +20,10 @@ public:
     const std::vector<Vector3> &loadDirections() const { return m_loadDirection; }
 
 protected:
-    virtual void dEnergy(int i, const SimObject &obj, RealAD1 &dE) const;
-    virtual void dEnergy(int i, const SimObject &obj, RealAD2 &dE) const;
-    virtual void dConstraints(int i, const SimObject &obj, ConstraintsAD1 &dC) const;
-    virtual void dConstraints(int i, const SimObject &obj, ConstraintsAD2 &dC) const;
+    virtual void dEnergy(int i, const ParticleGroup &obj, RealAD1 &dE) const;
+    virtual void dEnergy(int i, const ParticleGroup &obj, RealAD2 &dE) const;
+    virtual void dConstraints(int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const;
+    virtual void dConstraints(int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const;
     std::vector<Vector3> m_loadDirection;
 };
 }  // namespace spg

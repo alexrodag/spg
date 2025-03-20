@@ -1,5 +1,5 @@
 #include <spg/sim/energy/springAnchorRigidBodyEnergy.h>
-#include <spg/sim/simObject.h>
+#include <spg/sim/simObject/particleGroup.h>
 
 namespace spg
 {

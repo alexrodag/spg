@@ -6,7 +6,7 @@
 #include <vector>
 namespace spg
 {
-class SimObject;
+class ParticleGroup;
 class RigidBodyGroup;
 
 namespace solver
@@ -18,8 +18,8 @@ public:
     virtual void step() = 0;
     template <typename TObj>
     void addObject(const TObj &object);
-    std::vector<SimObject> &simObjects() { return std::get<std::vector<SimObject>>(m_objects); }
-    const std::vector<SimObject> &simObjects() const { return std::get<std::vector<SimObject>>(m_objects); }
+    std::vector<ParticleGroup> &particleGroups() { return std::get<std::vector<ParticleGroup>>(m_objects); }
+    const std::vector<ParticleGroup> &particleGroups() const { return std::get<std::vector<ParticleGroup>>(m_objects); }
     std::vector<RigidBodyGroup> &rbGroups() { return std::get<std::vector<RigidBodyGroup>>(m_objects); }
     const std::vector<RigidBodyGroup> &rbGroups() const { return std::get<std::vector<RigidBodyGroup>>(m_objects); }
     int numSimObjects();
@@ -32,7 +32,7 @@ public:
     void setGravity(const Vector3 &gravity) { m_gravity = gravity; }
 
 protected:
-    std::tuple<std::vector<SimObject>, std::vector<RigidBodyGroup>> m_objects;
+    std::tuple<std::vector<ParticleGroup>, std::vector<RigidBodyGroup>> m_objects;
     Vector3 m_gravity{0, -9.8, 0};
     Real m_time{0};
     Real m_dtStep{0.01};

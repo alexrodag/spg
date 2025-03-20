@@ -6,7 +6,7 @@
 
 namespace spg
 {
-class SimObject;
+class ParticleGroup;
 
 namespace solver
 {

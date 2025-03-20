@@ -1,8 +1,8 @@
 #pragma once
 
 #include <spg/types.h>
-#include <spg/sim/simObject.h>
-#include <spg/sim/rigidBodyGroup.h>
+#include <spg/sim/simObject/particleGroup.h>
+#include <spg/sim/simObject/rigidBodyGroup.h>
 
 #include <TinyAD/Scalar.hh>
 #include <TinyAD/Utils/HessianProjection.hh>
@@ -69,7 +69,7 @@ protected:
 // By providing just the constraint (or energy) implementation, all the energy and corresponding derivatives are
 // automatically provided, as well as solver-specific functions. Through overloading, it is also possible to provide
 // more efficient implementations
-template <int TstencilSize, int TnConstraints = 1, class TSimObject = SimObject>
+template <int TstencilSize, int TnConstraints = 1, class TSimObject = ParticleGroup>
 class StencilBlockEnergy : public Energy<TSimObject>
 {
 protected:

@@ -1,5 +1,5 @@
 #include <spg/sim/energy/springEnergy.h>
-#include <spg/sim/simObject.h>
+#include <spg/sim/simObject/particleGroup.h>
 
 namespace spg
 {
@@ -7,7 +7,7 @@ namespace
 {
 constexpr Real eps{static_cast<Real>(1.0e-6)};  // TODO decide if this should be moved somewhere else
 
-auto l_springConstraint = [](const SpringEnergy *energy, const int i, const SimObject &obj, auto &dC) {
+auto l_springConstraint = [](const SpringEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
     const auto &x0{obj.positions()[energy->stencils()[i][0]]};
     const auto &x1{obj.positions()[energy->stencils()[i][1]]};
     using RealT = std::decay_t<decltype(dC[0])>;
@@ -17,7 +17,7 @@ auto l_springConstraint = [](const SpringEnergy *energy, const int i, const SimO
     dC[0] = (x - y).norm() - L0;
 };
 
-auto l_springEnergy = [](const SpringEnergy *energy, const int i, const SimObject &obj, auto &dE) {
+auto l_springEnergy = [](const SpringEnergy *energy, const int i, const ParticleGroup &obj, auto &dE) {
     const auto &x0{obj.positions()[energy->stencils()[i][0]]};
     const auto &x1{obj.positions()[energy->stencils()[i][1]]};
     using RealT = std::decay_t<decltype(dE)>;
@@ -45,7 +45,7 @@ void SpringEnergy::addStencil(const std::array<int, s_stencilSize> &stencil,
     m_effectiveCompliance.push_back(m_effectiveStiffness.back().inverse());
 }
 
-void SpringEnergy::projectPosition(const int i, SimObject &obj, const Real dt) const
+void SpringEnergy::projectPosition(const int i, ParticleGroup &obj, const Real dt) const
 {
     auto &x0{obj.positions()[m_stencils[i][0]]};
     auto &x1{obj.positions()[m_stencils[i][1]]};
@@ -67,27 +67,27 @@ void SpringEnergy::projectPosition(const int i, SimObject &obj, const Real dt) c
     x1 -= invMass1 * corr;
 }
 
-void SpringEnergy::dEnergy(const int i, const SimObject &obj, RealAD1 &dC) const
+void SpringEnergy::dEnergy(const int i, const ParticleGroup &obj, RealAD1 &dC) const
 {
     l_springEnergy(this, i, obj, dC);
 }
 
-void SpringEnergy::dEnergy(const int i, const SimObject &obj, RealAD2 &dC) const
+void SpringEnergy::dEnergy(const int i, const ParticleGroup &obj, RealAD2 &dC) const
 {
     l_springEnergy(this, i, obj, dC);
 }
 
-void SpringEnergy::dConstraints(const int i, const SimObject &obj, ConstraintsAD1 &dC) const
+void SpringEnergy::dConstraints(const int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
 {
     l_springConstraint(this, i, obj, dC);
 }
 
-void SpringEnergy::dConstraints(const int i, const SimObject &obj, ConstraintsAD2 &dC) const
+void SpringEnergy::dConstraints(const int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
 {
     l_springConstraint(this, i, obj, dC);
 }
 
-Real SpringEnergy::energy(const int i, const SimObject &obj) const
+Real SpringEnergy::energy(const int i, const ParticleGroup &obj) const
 {
     auto &x0{obj.positions()[m_stencils[i][0]]};
     auto &x1{obj.positions()[m_stencils[i][1]]};
@@ -98,7 +98,7 @@ Real SpringEnergy::energy(const int i, const SimObject &obj) const
     return 0.5 * k * LTerm * LTerm;
 }
 
-SpringEnergy::EnergyGrad SpringEnergy::energyGradient(const int i, const SimObject &obj) const
+SpringEnergy::EnergyGrad SpringEnergy::energyGradient(const int i, const ParticleGroup &obj) const
 {
     const auto &x0{obj.positions()[m_stencils[i][0]]};
     const auto &x1{obj.positions()[m_stencils[i][1]]};
@@ -114,7 +114,7 @@ SpringEnergy::EnergyGrad SpringEnergy::energyGradient(const int i, const SimObje
     return grad;
 }
 
-SpringEnergy::EnergyHess SpringEnergy::energyHessian(const int i, const SimObject &obj) const
+SpringEnergy::EnergyHess SpringEnergy::energyHessian(const int i, const ParticleGroup &obj) const
 {
     const auto &x0{obj.positions()[m_stencils[i][0]]};
     const auto &x1{obj.positions()[m_stencils[i][1]]};

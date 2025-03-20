@@ -1,19 +1,20 @@
 #include <spg/sim/energy/springSquaredContinuumEnergy.h>
-#include <spg/sim/simObject.h>
+#include <spg/sim/simObject/particleGroup.h>
 
 namespace spg
 {
 namespace
 {
-auto l_springConstraint = [](const SpringSquaredContinuumEnergy *energy, const int i, const SimObject &obj, auto &dC) {
-    const auto &x0{obj.positions()[energy->stencils()[i][0]]};
-    const auto &x1{obj.positions()[energy->stencils()[i][1]]};
-    using RealT = std::decay_t<decltype(dC[0])>;
-    const Vector3T<RealT> x(RealT(x0.x(), 0), RealT(x0.y(), 1), RealT(x0.z(), 2));
-    const Vector3T<RealT> y(RealT(x1.x(), 3), RealT(x1.y(), 4), RealT(x1.z(), 5));
-    const Real L0 = energy->restLengths()[i];
-    dC[0] = (x - y).squaredNorm() / (L0 * L0) - 1.;
-};
+auto l_springConstraint =
+    [](const SpringSquaredContinuumEnergy *energy, const int i, const ParticleGroup &obj, auto &dC) {
+        const auto &x0{obj.positions()[energy->stencils()[i][0]]};
+        const auto &x1{obj.positions()[energy->stencils()[i][1]]};
+        using RealT = std::decay_t<decltype(dC[0])>;
+        const Vector3T<RealT> x(RealT(x0.x(), 0), RealT(x0.y(), 1), RealT(x0.z(), 2));
+        const Vector3T<RealT> y(RealT(x1.x(), 3), RealT(x1.y(), 4), RealT(x1.z(), 5));
+        const Real L0 = energy->restLengths()[i];
+        dC[0] = (x - y).squaredNorm() / (L0 * L0) - 1.;
+    };
 }
 
 void SpringSquaredContinuumEnergy::addStencil(const std::array<int, s_stencilSize> &stencil,
@@ -32,12 +33,12 @@ void SpringSquaredContinuumEnergy::addStencil(const std::array<int, s_stencilSiz
     m_effectiveCompliance.push_back(m_effectiveStiffness.back().inverse());
 }
 
-void SpringSquaredContinuumEnergy::dConstraints(const int i, const SimObject &obj, ConstraintsAD1 &dC) const
+void SpringSquaredContinuumEnergy::dConstraints(const int i, const ParticleGroup &obj, ConstraintsAD1 &dC) const
 {
     l_springConstraint(this, i, obj, dC);
 }
 
-void SpringSquaredContinuumEnergy::dConstraints(const int i, const SimObject &obj, ConstraintsAD2 &dC) const
+void SpringSquaredContinuumEnergy::dConstraints(const int i, const ParticleGroup &obj, ConstraintsAD2 &dC) const
 {
     l_springConstraint(this, i, obj, dC);
 }
