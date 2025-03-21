@@ -487,36 +487,6 @@ spg::ParticleGroup createCloth(const float mass,
     return pGroup;
 }
 
-spg::RigidBodyGroup createPulledRigidBody(const spg::Real mass,
-                                          const float width,
-                                          const float height,
-                                          const float depth)
-{
-    spg::RigidBodyGroup rbGroup;
-    auto [vertices, faces] = spg::io::loadObj("./unit-cube.obj");
-    spg::Matrix3 transform;
-    transform.setZero();
-    transform(0, 0) = width;
-    transform(1, 1) = height;
-    transform(2, 2) = depth;
-    for (auto &v : vertices) {
-        v = transform * v;
-    }
-    spg::TriangleMesh mesh(vertices, vertices, faces);
-    spg::Matrix3 localInertia;
-    localInertia.setZero();
-    localInertia(0, 0) = 1.0 / 12.0 * mass * (height * height + depth * depth);
-    localInertia(1, 1) = 1.0 / 12.0 * mass * (width * width + depth * depth);
-    localInertia(2, 2) = 1.0 / 12.0 * mass * (width * width + height * height);
-
-    rbGroup.addBody({0, 0, 0}, {0, 0, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
-    rbGroup.omegas().back() = {1, 0.000001, 0.000001};
-    std::shared_ptr<spg::SpringAnchorRBEnergy> springEnergy = std::make_shared<spg::SpringAnchorRBEnergy>();
-    springEnergy->addStencil({0}, {width * 0.5, height * 0.5, 0}, {-1, -1, 0}, 10);
-    rbGroup.addEnergy(springEnergy);
-    return rbGroup;
-}
-
 spg::RigidBodyGroup createAnchoredRigidBody(const spg::Real mass,
                                             const float width,
                                             const float height,
@@ -601,7 +571,7 @@ spg::RigidBodyGroup createRigidBodyChain(const spg::Real mass,
     return rbGroup;
 }
 
-enum class SceneType { Cloth, Rope, SpringBeam, FemBeam, RBChain, AnchoredRB, PulledRB };
+enum class SceneType { Cloth, Rope, SpringBeam, FemBeam, RBChain, AnchoredRB };
 
 std::vector<spg::ParticleGroup> createSceneObjects(SceneType sceneType,
                                                    MembraneType membraneType,
@@ -650,9 +620,6 @@ std::vector<spg::RigidBodyGroup> createRigidBodySceneObjects(SceneType sceneType
     }
     if (sceneType == SceneType::AnchoredRB) {
         return {createAnchoredRigidBody(mass, width, height, depth)};
-    }
-    if (sceneType == SceneType::PulledRB) {
-        return {createPulledRigidBody(mass, width, height, depth)};
     }
     throw std::runtime_error("Invalid rigid body group scene");
 }
@@ -763,8 +730,7 @@ int main()
         }
 
         // Scene selection stuff
-        const char *sceneTypeNames[] = {
-            "Spring beam", "Cloth", "Rope", "Fem beam", "RB chain", "Anchored RB", "Pulled RB"};
+        const char *sceneTypeNames[] = {"Spring beam", "Cloth", "Rope", "Fem beam", "RB chain", "Anchored RB"};
         std::map<int, SceneType> sceneTypeMap;
         sceneTypeMap[0] = SceneType::SpringBeam;
         sceneTypeMap[1] = SceneType::Cloth;
@@ -772,7 +738,6 @@ int main()
         sceneTypeMap[3] = SceneType::FemBeam;
         sceneTypeMap[4] = SceneType::RBChain;
         sceneTypeMap[5] = SceneType::AnchoredRB;
-        sceneTypeMap[6] = SceneType::PulledRB;
         int sceneId{0};
         SceneType sceneType = sceneTypeMap[sceneId];
 
@@ -1023,7 +988,7 @@ int main()
                                                               (springEnergy->localRBPoints()[s][1]));
                                 springIndices.push_back({s * 2, s * 2 + 1});
                             }
-                            polyscope::CurveNetwork *cn = polyscope::registerCurveNetwork(
+                            polyscope::registerCurveNetwork(
                                 "solver" + std::to_string(solverId) + "rbGroup" + std::to_string(i) + "springs",
                                 springPositions,
                                 springIndices);
@@ -1039,11 +1004,11 @@ int main()
                                 springPositions.push_back(springAnchorEnergy->anchors()[s]);
                                 springIndices.push_back({s * 2, s * 2 + 1});
                             }
-                            polyscope::CurveNetwork *cn = polyscope::registerCurveNetwork(
-                                "solver" + std::to_string(solverId) + "rbGroup" + std::to_string(i) +
-                                    "anchor-springs-" + springAnchorEnergy->name(),
-                                springPositions,
-                                springIndices);
+                            polyscope::registerCurveNetwork("solver" + std::to_string(solverId) + "rbGroup" +
+                                                                std::to_string(i) + "anchor-springs-" +
+                                                                springAnchorEnergy->name(),
+                                                            springPositions,
+                                                            springIndices);
                         }
                     }
                 }
@@ -1082,8 +1047,7 @@ int main()
                 solver->setNumSubsteps(1);
                 solver->setVerbosity(verbosity);
                 solverSubsteps.push_back(1);
-                if (sceneType != SceneType::RBChain && sceneType != SceneType::AnchoredRB &&
-                    sceneType != SceneType::PulledRB) {
+                if (sceneType != SceneType::RBChain && sceneType != SceneType::AnchoredRB) {
                     const auto objects = createSceneObjects(
                         sceneType, membraneType, bendingType, springType, femType, simObjectResolutionMultiplier);
                     for (const auto &object : objects) {
@@ -1129,8 +1093,7 @@ int main()
                 }
                 solver->setNumSubsteps(solverSubsteps[solverId]);
                 solver->setVerbosity(verbosity);
-                if (sceneType != SceneType::RBChain && sceneType != SceneType::AnchoredRB &&
-                    sceneType != SceneType::PulledRB) {
+                if (sceneType != SceneType::RBChain && sceneType != SceneType::AnchoredRB) {
                     const auto objects = createSceneObjects(
                         sceneType, membraneType, bendingType, springType, femType, simObjectResolutionMultiplier);
                     for (const auto &object : objects) {
@@ -1329,7 +1292,7 @@ int main()
             }
 
             ImGui::Dummy(ImVec2(0.0f, 20.0f));
-            ImGui::Text("Mid-click and drag on a vertex to pull it");
+            ImGui::Text("Mid-click and drag on a particle or a rigid body to pull it");
             ImGui::Dummy(ImVec2(0.0f, 20.0f));
 
             ImGui::PopItemWidth();

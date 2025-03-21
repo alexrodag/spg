@@ -44,7 +44,7 @@ void XPBD::step()
     Real updateTime = 0;
     for (int s = 0; s < m_nsubsteps; ++s) {
         detailTimer.start();
-        int accumulatedNDOF = 0;
+        accumulatedNDOF = 0;
         // Store previous positions
         apply_each(
             [this, &accumulatedNDOF](const auto &objs) {
