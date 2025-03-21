@@ -487,13 +487,37 @@ spg::ParticleGroup createCloth(const float mass,
     return pGroup;
 }
 
+std::tuple<std::vector<spg::Vector3>, std::vector<spg::Int3>> unitCubeGeometry()
+{
+    std::vector<spg::Vector3> vertices{{-0.5, -0.5, -0.5},
+                                       {0.5, -0.5, -0.5},
+                                       {-0.5, 0.5, -0.5},
+                                       {0.5, 0.5, -0.5},
+                                       {-0.5, -0.5, 0.5},
+                                       {0.5, -0.5, 0.5},
+                                       {-0.5, 0.5, 0.5},
+                                       {0.5, 0.5, 0.5}};
+    std::vector<spg::Int3> faces{{0, 2, 3},
+                                 {0, 3, 1},
+                                 {0, 4, 6},
+                                 {0, 6, 2},
+                                 {0, 1, 5},
+                                 {0, 5, 4},
+                                 {7, 6, 4},
+                                 {7, 4, 5},
+                                 {7, 3, 2},
+                                 {7, 2, 6},
+                                 {7, 5, 1},
+                                 {7, 1, 3}};
+    return {vertices, faces};
+}
 spg::RigidBodyGroup createAnchoredRigidBody(const spg::Real mass,
                                             const float width,
                                             const float height,
                                             const float depth)
 {
     spg::RigidBodyGroup rbGroup;
-    auto [vertices, faces] = spg::io::loadObj("./unit-cube.obj");
+    auto [vertices, faces] = unitCubeGeometry();
     spg::Matrix3 transform;
     transform.setZero();
     transform(0, 0) = width;
@@ -527,7 +551,7 @@ spg::RigidBodyGroup createRigidBodyChain(const spg::Real mass,
                                          const int nBodies)
 {
     spg::RigidBodyGroup rbGroup;
-    auto [vertices, faces] = spg::io::loadObj("./unit-cube.obj");
+    auto [vertices, faces] = unitCubeGeometry();
     spg::Matrix3 transform;
     transform.setZero();
     transform(0, 0) = width;
