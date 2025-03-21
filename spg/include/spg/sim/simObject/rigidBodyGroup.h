@@ -72,6 +72,8 @@ public:
     void updateTheta(int i);
     void updateThetas();
 
+    Vector3 globalToLocalRigidBodyFrame(const Vector3 &globalPos, int bodyId);
+
 protected:
     std::string m_name;  // Mostly for debug
 
