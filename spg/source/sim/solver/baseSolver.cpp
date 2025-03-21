@@ -16,7 +16,7 @@ void BaseSolver::addObject(const TObj &object)
 int BaseSolver::numSimObjects()
 {
     int nObjects = 0;
-    apply_each([&nObjects](auto &objs) { nObjects += objs.size(); }, m_objects);
+    apply_each([&nObjects](auto &objs) { nObjects += static_cast<int>(objs.size()); }, m_objects);
     return nObjects;
 }
 

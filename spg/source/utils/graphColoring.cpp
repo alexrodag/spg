@@ -30,7 +30,7 @@ std::vector<int> Graph::greedyColoring()
 
     // Assign colors to remaining nodes
     for (int n = 1; n < nbNodes; n++) {
-        std::fill(colorIsAvailable.begin(), colorIsAvailable.end(), 1);
+        std::fill(colorIsAvailable.begin(), colorIsAvailable.end(), static_cast<char>(1));
         // Flag unavailable colors
         std::for_each(m_adjacency[n].begin(), m_adjacency[n].end(), [&colorIsAvailable, &nodeColors](const int &n) {
             if (nodeColors[n] != -1) {

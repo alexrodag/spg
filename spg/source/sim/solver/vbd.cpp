@@ -95,7 +95,7 @@ void VBD::step()
         const int iterations = m_iterations;
         for (int iter = 0; iter < iterations; ++iter) {
             int objId = 0;
-            int accumulatedNDOF = 0;
+            accumulatedNDOF = 0;
             apply_each(
                 [this, &objId, &accumulatedNDOF, invdt, invdtSquared, epsilon, iter](auto &objs) {
                     for (auto &obj : objs) {

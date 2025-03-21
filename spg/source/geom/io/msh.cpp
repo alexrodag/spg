@@ -9,9 +9,9 @@ namespace spg::io
 {
 std::tuple<std::vector<Vector3>, std::vector<Int4>> loadMsh(const std::string &filePath)
 {
+#ifdef MSHIO_ACTIVE
     std::vector<Vector3> vertices;
     std::vector<Int4> tets;
-#ifdef MSHIO_ACTIVE
     // TODO: Make a more secure load, checking that sizes are the expected ones
     mshio::MshSpec spec = mshio::load_msh(filePath);
 
@@ -35,9 +35,9 @@ std::tuple<std::vector<Vector3>, std::vector<Int4>> loadMsh(const std::string &f
         }
     }
     std::cout << "nverts " << vertices.size();
-#else
-    throw std::runtime_error("loadMsh requires compiling with MshIO activated");
-#endif
     return {std::move(vertices), std::move(tets)};
+#else
+    throw std::runtime_error("loadMsh requires compiling with MshIO activated, filepath " + filePath + " unused");
+#endif
 }
 }  // namespace spg::io
