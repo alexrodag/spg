@@ -13,16 +13,11 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release")
 endif()
 
+set(WARNINGS_AS_ERRORS FALSE)
+
 if (MSVC)
     add_definitions(/MP) # Parallel compilation
-    # add_definitions(/W4) # Show level 4 warnings
-    # add_definitions(/WX) # Treat warnings as errors
 endif ()
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    # add_definitions(-Wall) # Enable all warnings
-    # add_definitions(-Werror) # Treat warnings as errors (optional)
-endif()
 
 add_subdirectory(spg)
 

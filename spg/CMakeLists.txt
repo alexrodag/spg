@@ -50,6 +50,15 @@ if (MSVC)
   target_compile_options(${PROJECT_NAME} PUBLIC /bigobj)
 endif ()
 
+if (WARNINGS_AS_ERRORS)
+  if (MSVC)
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4 /WX)
+  endif ()
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror)
+  endif()
+endif()
+
 target_sources(${PROJECT_NAME} PRIVATE ${SRCF} ${INCF})
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen OpenMP::OpenMP_CXX)
