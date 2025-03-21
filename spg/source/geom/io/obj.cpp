@@ -9,9 +9,9 @@ namespace spg::io
 {
 std::tuple<std::vector<Vector3>, std::vector<Int3>> loadObj(const std::string &filePath)
 {
+#ifdef TINYOBJLOADER_ACTIVE
     std::vector<Vector3> vertices;
     std::vector<Int3> faces;
-#ifdef TINYOBJLOADER_ACTIVE
     // TODO: Make a more secure load, checking submeshes, per-face sizes and so on
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -28,9 +28,10 @@ std::tuple<std::vector<Vector3>, std::vector<Int3>> loadObj(const std::string &f
                          shapes.front().mesh.indices[3 * i + 1].vertex_index,
                          shapes.front().mesh.indices[3 * i + 2].vertex_index});
     }
-#else
-    throw std::runtime_error("loadObj requires compiling with tinyobjloader activated");
-#endif
     return {std::move(vertices), std::move(faces)};
+#else
+    throw std::runtime_error("loadObj requires compiling with tinyobjloader activated, filepath " + filePath +
+                             " unused");
+#endif
 }
 }  // namespace spg::io
