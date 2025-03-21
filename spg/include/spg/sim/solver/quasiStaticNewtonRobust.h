@@ -18,7 +18,7 @@ public:
 protected:
     void computeSystemIntegratedVelocities(const VectorX &x0, VectorX &v, Real invdt);
 
-    const Real m_newtonThreshold{1e-1};
+    const Real m_newtonThreshold{1e-2};
 
     // Quality status control
     Real m_currentDt{-1.};
