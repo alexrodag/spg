@@ -672,6 +672,19 @@ std::shared_ptr<spg::SpringAnchorEnergy> addPickingEnergy(spg::ParticleGroup &pG
     return springAnchorEnergy;
 }
 
+std::shared_ptr<spg::SpringAnchorRBEnergy> addPickingEnergy(spg::RigidBodyGroup &rbGroup,
+                                                            int bodyId,
+                                                            const spg::Vector3 &pos)
+{
+    auto springAnchorRBEnergy = std::make_shared<spg::SpringAnchorRBEnergy>();
+    springAnchorRBEnergy->setName("picking");
+    spg::Real pickingStiffness = 100;
+    springAnchorRBEnergy->addStencil(
+        std::array<int, 1>{bodyId}, rbGroup.globalToLocalRigidBodyFrame(pos, bodyId), pos, pickingStiffness);
+    rbGroup.addEnergy(springAnchorRBEnergy);
+    return springAnchorRBEnergy;
+}
+
 glm::vec3 screenCoordsToWorldPosition(glm::vec2 screenCoords, float &depth)
 {
     glm::mat4 view = polyscope::view::getCameraViewMatrix();
@@ -715,10 +728,15 @@ int main()
         std::vector<std::shared_ptr<spg::solver::BaseSolver>> solvers;
 
         // Stuff for picking
-        std::unordered_map<const polyscope::Structure *, spg::ParticleGroup *> polyscopeToObject;
+        std::unordered_map<const polyscope::Structure *, spg::ParticleGroup *> polyscopeToParticleGroup;
         std::shared_ptr<spg::SpringAnchorEnergy> currentPickingEnergy;
-        spg::ParticleGroup *currentPickedObject = nullptr;
+        spg::ParticleGroup *currentPickedParticleGroup = nullptr;
         int currentPickedParticleId = -1;
+        std::unordered_map<const polyscope::Structure *, std::pair<spg::RigidBodyGroup *, int>>
+            polyscopeToRigidBodyGroupAndBody;
+        std::shared_ptr<spg::SpringAnchorRBEnergy> currentRigidBodyPickingEnergy;
+        spg::RigidBodyGroup *currentPickedRigidBodyGroup = nullptr;
+
         float currentPickedDepth = -1;
         spg::Vector3 currentPickedPos;
         spg::Vector3 pickAnchorPos;
@@ -877,20 +895,22 @@ int main()
                                     springPositions.push_back(springAnchorEnergy->anchors()[s]);
                                 }
                                 auto *cn = polyscope::getCurveNetwork("solver" + std::to_string(solverId) + "rbGroup" +
-                                                                      std::to_string(i) + "anchor-springs");
+                                                                      std::to_string(i) + "anchor-springs-" +
+                                                                      springAnchorEnergy->name());
                                 cn->updateNodePositions(springPositions);
                             }
                         }
                     }
                 }
             };
-            auto l_registerSolver = [&polyscopeToObject](auto &solver, int solverId) {
+            auto l_registerSolver = [&polyscopeToParticleGroup, &polyscopeToRigidBodyGroupAndBody](auto &solver,
+                                                                                                   int solverId) {
                 for (int i = 0; i < solver->particleGroups().size(); ++i) {
                     auto &pGroup = solver->particleGroups()[i];
                     polyscope::PointCloud *pc = polyscope::registerPointCloud(
                         "solver" + std::to_string(solverId) + "simObj" + std::to_string(i), pGroup.positions());
                     pc->setPointRadius(0.01);
-                    polyscopeToObject[pc] = &pGroup;
+                    polyscopeToParticleGroup[pc] = &pGroup;
 
                     /* std::vector<spg::coloring::FlatStencils> flatStencilsSet;
                     for (const auto &energy : pGroup.energies()) {
@@ -959,13 +979,14 @@ int main()
                     }
                 }
                 for (int i = 0; i < solver->rbGroups().size(); ++i) {
-                    const spg::RigidBodyGroup &rbGroup = solver->rbGroups()[i];
+                    spg::RigidBodyGroup &rbGroup = solver->rbGroups()[i];
                     for (int j = 0; j < rbGroup.size(); ++j) {
                         polyscope::SurfaceMesh *sm =
                             polyscope::registerSurfaceMesh("solver" + std::to_string(solverId) + "rbGroup" +
                                                                std::to_string(i) + "rb" + std::to_string(j),
                                                            rbGroup.visualMeshes()[j].vertices(),
                                                            rbGroup.visualMeshes()[j].faces());
+                        polyscopeToRigidBodyGroupAndBody[sm] = std::make_pair(&rbGroup, j);
                         const auto &pos = rbGroup.positions()[i];
                         const auto &rotation = rbGroup.rotationMatrices()[i];
                         glm::mat4 mat(rotation(0, 0),
@@ -1019,7 +1040,8 @@ int main()
                                 springIndices.push_back({s * 2, s * 2 + 1});
                             }
                             polyscope::CurveNetwork *cn = polyscope::registerCurveNetwork(
-                                "solver" + std::to_string(solverId) + "rbGroup" + std::to_string(i) + "anchor-springs",
+                                "solver" + std::to_string(solverId) + "rbGroup" + std::to_string(i) +
+                                    "anchor-springs-" + springAnchorEnergy->name(),
                                 springPositions,
                                 springIndices);
                         }
@@ -1043,8 +1065,14 @@ int main()
                                                      std::to_string(i) + "rb" + std::to_string(j));
                         polyscope::removeCurveNetwork("solver" + std::to_string(solverId) + "rbGroup" +
                                                       std::to_string(j) + "springs");
-                        polyscope::removeCurveNetwork("solver" + std::to_string(solverId) + "rbGroup" +
-                                                      std::to_string(j) + "anchor-springs");
+                        for (auto energy : rbGroup.energies()) {
+                            if (auto springAnchorEnergy = dynamic_cast<spg::SpringAnchorRBEnergy *>(energy.get());
+                                springAnchorEnergy != nullptr) {
+                                polyscope::removeCurveNetwork("solver" + std::to_string(solverId) + "rbGroup" +
+                                                              std::to_string(j) + "anchor-springs-" +
+                                                              springAnchorEnergy->name());
+                            }
+                        }
                     }
                 }
             };
@@ -1121,8 +1149,8 @@ int main()
                     l_unregisterSolver(solvers[i], i);
                     l_resetSolver(i);
                     l_registerSolver(solvers[i], i);
-                    l_updateView();
                 }
+                l_updateView();
             };
             auto l_removeSolver = [&solvers, &solverTypes, &solverSubsteps, dt, l_unregisterSolver]() {
                 l_unregisterSolver(solvers.back(), static_cast<int>(solvers.size()) - 1);
@@ -1208,8 +1236,8 @@ int main()
                     l_unregisterSolver(solvers[s], s);
                     l_resetSolver(s);
                     l_registerSolver(solvers[s], s);
-                    l_updateView();
                 }
+                l_updateView();
             }
             for (int i = 0; i < solverSubsteps.size(); ++i) {
                 auto &substeps = solverSubsteps[i];
@@ -1341,36 +1369,74 @@ int main()
                 glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
                 std::pair<polyscope::Structure *, size_t> pickPair = polyscope::pick::evaluatePickQuery(
                     static_cast<int>(screenCoords.x), static_cast<int>(screenCoords.y));
-                if (pickPair.first != nullptr && polyscopeToObject.find(pickPair.first) != polyscopeToObject.end()) {
+                if (pickPair.first != nullptr &&
+                    polyscopeToParticleGroup.find(pickPair.first) != polyscopeToParticleGroup.end()) {
                     const auto pos = screenCoordsToWorldPosition(screenCoords, currentPickedDepth);
                     // Not sure why it can return 1 when picking something, but it is the case, ignore the hit
                     if (currentPickedDepth != 1.) {
-                        currentPickedObject = polyscopeToObject[pickPair.first];
+                        currentPickedParticleGroup = polyscopeToParticleGroup[pickPair.first];
                         currentPickedParticleId = static_cast<int>(pickPair.second);
                         currentPickedPos = {pos.x, pos.y, pos.z};
-                        pickAnchorPos = currentPickedObject->positions()[pickPair.second];
-                        currentPickingEnergy =
-                            addPickingEnergy(*currentPickedObject, static_cast<int>(pickPair.second), pickAnchorPos);
+                        pickAnchorPos = currentPickedParticleGroup->positions()[pickPair.second];
+                        currentPickingEnergy = addPickingEnergy(
+                            *currentPickedParticleGroup, static_cast<int>(pickPair.second), pickAnchorPos);
+                        l_flagSolversForTopologyChanges();
+                    }
+                } else if (pickPair.first != nullptr && polyscopeToRigidBodyGroupAndBody.find(pickPair.first) !=
+                                                            polyscopeToRigidBodyGroupAndBody.end()) {
+                    const auto pos = screenCoordsToWorldPosition(screenCoords, currentPickedDepth);
+                    // Not sure why it can return 1 when picking something, but it is the case, ignore the hit
+                    if (currentPickedDepth != 1.) {
+                        auto [rbGroup, bodyId] = polyscopeToRigidBodyGroupAndBody[pickPair.first];
+                        currentPickedPos = {pos.x, pos.y, pos.z};
+                        pickAnchorPos = currentPickedPos;
+                        currentPickedRigidBodyGroup = rbGroup;
+                        for (int i = 0; i < solvers.size(); ++i) {
+                            l_unregisterSolver(solvers[i], i);
+                        }
+                        currentRigidBodyPickingEnergy =
+                            addPickingEnergy(*currentPickedRigidBodyGroup, bodyId, pickAnchorPos);
+                        for (int i = 0; i < solvers.size(); ++i) {
+                            l_registerSolver(solvers[i], i);
+                        }
+                        l_updateView();
                         l_flagSolversForTopologyChanges();
                     }
                 }
             } else if (io.MouseReleased[2]) {
                 currentPickedDepth = -1;
-                if (currentPickedObject != nullptr) {
-                    currentPickedObject->removeEnergy(currentPickingEnergy);
-                    currentPickedObject = nullptr;
+                if (currentPickedParticleGroup != nullptr) {
+                    currentPickedParticleGroup->removeEnergy(currentPickingEnergy);
+                    currentPickedParticleGroup = nullptr;
                     currentPickingEnergy = nullptr;
+                    l_flagSolversForTopologyChanges();
+                } else if (currentPickedRigidBodyGroup != nullptr) {
+                    for (int i = 0; i < solvers.size(); ++i) {
+                        l_unregisterSolver(solvers[i], i);
+                    }
+                    currentPickedRigidBodyGroup->removeEnergy(currentRigidBodyPickingEnergy);
+                    for (int i = 0; i < solvers.size(); ++i) {
+                        l_registerSolver(solvers[i], i);
+                    }
+                    l_updateView();
+                    currentPickedRigidBodyGroup = nullptr;
+                    currentRigidBodyPickingEnergy = nullptr;
                     l_flagSolversForTopologyChanges();
                 }
             } else if (io.MouseDown[2] && (io.MouseDelta.x != 0 || io.MouseDelta.y != 0) && currentPickedDepth > 0) {
                 glm::vec2 screenCoords{io.MousePos.x, io.MousePos.y};
                 glm::vec3 worldPos = screenCoordsToWorldPosition(screenCoords, currentPickedDepth);
 
-                if (currentPickedObject != nullptr) {
+                if (currentPickedParticleGroup != nullptr) {
                     spg::Vector3 disp = spg::Vector3(worldPos.x, worldPos.y, worldPos.z) - currentPickedPos;
                     currentPickedPos = {worldPos.x, worldPos.y, worldPos.z};
                     pickAnchorPos += disp;
                     currentPickingEnergy->updateAnchor(0, pickAnchorPos);
+                } else if (currentPickedRigidBodyGroup != nullptr) {
+                    spg::Vector3 disp = spg::Vector3(worldPos.x, worldPos.y, worldPos.z) - currentPickedPos;
+                    currentPickedPos = {worldPos.x, worldPos.y, worldPos.z};
+                    pickAnchorPos += disp;
+                    currentRigidBodyPickingEnergy->updateAnchor(0, pickAnchorPos);
                 }
             }
         };
