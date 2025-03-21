@@ -60,6 +60,9 @@ public:
         m_prepared = true;
     }
 
+    void setName(const std::string &name) { m_name = name; }
+    std::string name() { return m_name; }
+
 protected:
     bool m_prepared{false};
     std::string m_name;  // Mostly for debug

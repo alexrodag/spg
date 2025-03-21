@@ -236,4 +236,9 @@ void RigidBodyGroup::updateThetas()
     }
 }
 
+Vector3 RigidBodyGroup::globalToLocalRigidBodyFrame(const Vector3 &globalPos, int bodyId)
+{
+    return m_rotationMatrix[bodyId].transpose() * (globalPos - m_x[bodyId]);
+}
+
 }  // namespace spg
