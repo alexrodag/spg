@@ -77,7 +77,7 @@ class StencilBlockEnergy : public Energy<TSimObject>
 {
 protected:
     // Static constexpr and type definitions to expose template parameters to subclasses
-    static constexpr int s_nDOFs = Energy::s_nDOFs;
+    static constexpr int s_nDOFs = Energy<TSimObject>::s_nDOFs;
     static constexpr int s_stencilSize{TstencilSize};
 
     // Autodiff scalar with first derivative computation
@@ -133,7 +133,7 @@ public:
             }
             if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
                 const auto diagonalIndex = s * s_nDOFs + 3;
-                W.block<3, 3>(diagonalIndex, diagonalIndex) = obj.invInertias()[m_stencils[i][s]];
+                W.template block<3, 3>(diagonalIndex, diagonalIndex) = obj.invInertias()[m_stencils[i][s]];
             }
         }
         const ConstraintsGrad WgradC = W * grad;
@@ -168,7 +168,7 @@ public:
             }
             if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
                 const auto diagonalIndex = s * s_nDOFs + 3;
-                W.block<3, 3>(diagonalIndex, diagonalIndex) = obj.invInertias()[m_stencils[i][s]];
+                W.template block<3, 3>(diagonalIndex, diagonalIndex) = obj.invInertias()[m_stencils[i][s]];
             }
         }
         const EnergyGrad deltaV = W * -grad * dt;
@@ -306,13 +306,13 @@ protected:
                               [[maybe_unused]] const TSimObject &obj,
                               [[maybe_unused]] ConstraintsAD1 &dC) const
     {
-        throw std::runtime_error("dConstraints not implemented for " + m_name + " energy.");
+        throw std::runtime_error("dConstraints not implemented for " + this->m_name + " energy.");
     }
     virtual void dConstraints([[maybe_unused]] int i,
                               [[maybe_unused]] const TSimObject &obj,
                               [[maybe_unused]] ConstraintsAD2 &dC) const
     {
-        throw std::runtime_error("dConstraints not implemented for " + m_name + " energy.");
+        throw std::runtime_error("dConstraints not implemented for " + this->m_name + " energy.");
     }
     virtual std::tuple<Constraints, ConstraintsGrad> dConstraintsAndGradient(int i, const TSimObject &obj) const final
     {

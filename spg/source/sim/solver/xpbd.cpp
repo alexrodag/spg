@@ -57,11 +57,6 @@ void XPBD::step()
         // Apply explicit forces to the velocities and compute predicted inertial pos
         apply_each(
             [this, dt](auto &objs) {
-                auto l_skew = [](const spg::Vector3 &v) {
-                    spg::Matrix3 vSkew;
-                    vSkew << 0, -v.z(), v.y(), v.z(), 0, -v.x(), -v.y(), v.x(), 0;
-                    return vSkew;
-                };
                 const Vector3 dtg = dt * m_gravity;
                 for (auto &obj : objs) {
                     const int nPrimitives = static_cast<int>(obj.size());
@@ -70,8 +65,8 @@ void XPBD::step()
                         // leave it as it is for the sake of clarity
                         obj.velocities()[i] += dtg;
                         if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
-                            obj.omegas()[i] += dt * obj.invInertias()[i] *
-                                               (-l_skew(obj.omegas()[i]) * obj.inertias()[i] * obj.omegas()[i]);
+                            obj.omegas()[i] +=
+                                dt * obj.invInertias()[i] * -obj.omegas()[i].cross(obj.inertias()[i] * obj.omegas()[i]);
                         }
                     }
                     obj.integrateVelocities(dt);
@@ -151,7 +146,7 @@ void XPBD::computeParallelStencilGroups()
                 for (const auto &energy : energies) {
                     const auto stencilColors = coloring::colorStencils({energy->flatStencils(), energy->stencilSize()});
                     auto &stencilGroups = m_stencilGroupsPerEnergy[energy.get()];
-                    for (int i = 0; i < stencilColors.size(); ++i) {
+                    for (int i = 0; i < static_cast<int>(stencilColors.size()); ++i) {
                         stencilGroups.resize(std::max(stencilGroups.size(), static_cast<size_t>(stencilColors[i] + 1)));
                         stencilGroups[stencilColors[i]].push_back(i);
                     }

@@ -107,12 +107,6 @@ void ImplicitEulerBase::getSystemForce(VectorX &f) const
     f.setZero();
     apply_each(
         [this, &accumulatedNDOF, &f, &timer, &accumulatedTime](auto &objs) {
-            auto l_skew = [](const spg::Vector3 &v) {
-                spg::Matrix3 vSkew;
-                vSkew << 0, -v.z(), v.y(), v.z(), 0, -v.x(), -v.y(), v.x(), 0;
-                return vSkew;
-            };
-
             for (const auto &obj : objs) {
                 const auto &masses = obj.masses();
                 const int nPrimitives = static_cast<int>(obj.size());
@@ -122,7 +116,7 @@ void ImplicitEulerBase::getSystemForce(VectorX &f) const
                     if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
                         // TODO: Transform this into an implicit energy, as it can lead to instability
                         f.segment<3>(i * obj.s_nDOFs + 3 + accumulatedNDOF) +=
-                            -l_skew(obj.omegas()[i]) * obj.inertias()[i] * obj.omegas()[i];
+                            -obj.omegas()[i].cross(obj.inertias()[i] * obj.omegas()[i]);
                     }
                 }
                 // Accumulate internal energy forces

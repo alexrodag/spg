@@ -189,7 +189,7 @@ void RigidBodyGroup::reset()
 
 void RigidBodyGroup::scaleMasses(const Real scaleFactor)
 {
-    for (int i = 0; i < m_m.size(); ++i) {
+    for (int i = 0; i < static_cast<int>(m_m.size()); ++i) {
         if (m_m[i] != 0) {
             m_m[i] *= scaleFactor;
             m_w[i] /= scaleFactor;
