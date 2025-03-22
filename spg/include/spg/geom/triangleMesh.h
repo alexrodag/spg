@@ -35,7 +35,7 @@ public:
         }
         // Compute edges info
         std::map<Int2, std::vector<OpposingVertex>> edges;
-        for (int f = 0; f < m_faces.size(); ++f) {
+        for (int f = 0; f < static_cast<int>(m_faces.size()); ++f) {
             const auto &face{m_faces[f]};
             for (int i = 0; i < 3; ++i) {
                 const int id0 = face[i];

@@ -21,11 +21,6 @@ void SimplecticEuler::step()
         // Update velocities
         apply_each(
             [this, dt](auto &objs) {
-                auto l_skew = [](const spg::Vector3 &v) {
-                    spg::Matrix3 vSkew;
-                    vSkew << 0, -v.z(), v.y(), v.z(), 0, -v.x(), -v.y(), v.x(), 0;
-                    return vSkew;
-                };
                 const Vector3 dtg = dt * m_gravity;
                 for (auto &obj : objs) {
                     const int nPrimitives = static_cast<int>(obj.size());
@@ -34,8 +29,8 @@ void SimplecticEuler::step()
                         auto &velocities = obj.velocities();
                         velocities[i] += dtg;
                         if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
-                            obj.omegas()[i] += dt * obj.invInertias()[i] *
-                                               (-obj.omegas()[i].cross(obj.inertias()[i] * obj.omegas()[i]));
+                            obj.omegas()[i] +=
+                                dt * obj.invInertias()[i] * -obj.omegas()[i].cross(obj.inertias()[i] * obj.omegas()[i]);
                         }
                     }
                     // Accumulate velocities due to external forces

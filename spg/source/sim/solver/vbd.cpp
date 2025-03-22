@@ -61,11 +61,6 @@ void VBD::step()
             [this, dt](auto &objs) {
                 int accumulatedNDOF = 0;
                 const Vector3 dtg = dt * m_gravity;
-                auto l_skew = [](const spg::Vector3 &v) {
-                    spg::Matrix3 vSkew;
-                    vSkew << 0, -v.z(), v.y(), v.z(), 0, -v.x(), -v.y(), v.x(), 0;
-                    return vSkew;
-                };
                 for (auto &obj : objs) {
                     const int nPrimitives = static_cast<int>(obj.size());
                     for (int i = 0; i < nPrimitives; ++i) {
@@ -73,8 +68,8 @@ void VBD::step()
                         // leave it as it is for the sake of clarity
                         obj.velocities()[i] += dtg;
                         if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
-                            obj.omegas()[i] += dt * obj.invInertias()[i] *
-                                               (-l_skew(obj.omegas()[i]) * obj.inertias()[i] * obj.omegas()[i]);
+                            obj.omegas()[i] +=
+                                dt * obj.invInertias()[i] * -obj.omegas()[i].cross(obj.inertias()[i] * obj.omegas()[i]);
                         }
                     }
                     obj.integrateVelocities(dt);
@@ -112,11 +107,12 @@ void VBD::step()
                                 H.setZero();
                                 if (iter != 0 || m_initialGuessType == InitialGuessType::InertialWithAcceleration) {
                                     // The first iter with inertial guess produces no forces here, so we can skip it
-                                    f.segment<3>(0) = -mOverdtSquared *
-                                                      (obj.positions()[vIdx] -
-                                                       m_xInertial.segment<3>(vIdx * obj.s_nDOFs + accumulatedNDOF));
+                                    f.template segment<3>(0) =
+                                        -mOverdtSquared *
+                                        (obj.positions()[vIdx] -
+                                         m_xInertial.segment<3>(vIdx * obj.s_nDOFs + accumulatedNDOF));
                                     if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
-                                        f.segment<3>(3) =
+                                        f.template segment<3>(3) =
                                             -invdt * (obj.inertias()[vIdx] *
                                                       (obj.computeIntegratedOmega(
                                                            m_xOld.segment<3>(vIdx * obj.s_nDOFs + 3 + accumulatedNDOF),
@@ -125,12 +121,12 @@ void VBD::step()
                                                        obj.omegas()[vIdx]));
                                     }
                                 }
-                                H.block<3, 3>(0, 0) = mOverdtSquared * Matrix3::Identity();
+                                H.template block<3, 3>(0, 0) = mOverdtSquared * Matrix3::Identity();
                                 if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, RigidBodyGroup>) {
-                                    H.block<3, 3>(3, 3) = invdtSquared * obj.inertias()[vIdx];
+                                    H.template block<3, 3>(3, 3) = invdtSquared * obj.inertias()[vIdx];
                                 }
                                 auto &vertexElementEntriesPerEnergy = elementsPerVertex[vIdx];
-                                for (int e = 0; e < obj.energies().size(); ++e) {
+                                for (int e = 0; e < static_cast<int>(obj.energies().size()); ++e) {
                                     auto energy = obj.energies()[e].get();
                                     const auto &vertexElementEntries = vertexElementEntriesPerEnergy[e];
                                     // Note: This inner loop would be implemented in parallel in the GPU version,
@@ -222,7 +218,7 @@ void VBD::computeParallelVertexGroups()
                     flatStencilsSet.push_back({energy->flatStencils(), energy->stencilSize()});
                 }
                 auto vertexColors = coloring::colorVertices(obj.size(), flatStencilsSet);
-                for (int i = 0; i < vertexColors.size(); ++i) {
+                for (int i = 0; i < static_cast<int>(vertexColors.size()); ++i) {
                     vertexGroups.resize(std::max(vertexGroups.size(), static_cast<size_t>(vertexColors[i] + 1)));
                     vertexGroups[vertexColors[i]].push_back(i);
                 }
@@ -252,7 +248,7 @@ void VBD::computeStencilInfoPerVertex()
                     elementsPerVertex[v].clear();
                     elementsPerVertex[v].resize(nEnergies);
                 }
-                for (int e = 0; e < energies.size(); ++e) {
+                for (int e = 0; e < static_cast<int>(energies.size()); ++e) {
                     const auto &energy = energies[e];
                     const int stencilSize = energy->stencilSize();
                     const auto flatStencils = energy->flatStencils();
