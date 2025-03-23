@@ -32,9 +32,7 @@ void ImplicitEulerNewtonDx::step()
     for (int s = 0; s < m_nsubsteps; ++s) {
         // Store state backup
         VectorX x0(totalNDOF);
-        VectorX v0(totalNDOF);
         getSystemPositions(x0);
-        getSystemVelocities(v0);
 
         // Compute mass matrix in initial state to prevent simulations with rigid bodies to explode
         SparseMatrix M(totalNDOF, totalNDOF);
