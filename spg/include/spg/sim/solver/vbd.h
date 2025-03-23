@@ -6,8 +6,6 @@
 
 namespace spg
 {
-class ParticleGroup;
-
 namespace solver
 {
 // Parallel CPU version of the VBD solver by Chen 2024

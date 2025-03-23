@@ -40,7 +40,6 @@
 #include <spg/sim/solver/vbd.h>
 #include <spg/geom/triangleMesh.h>
 #include <spg/geom/tetrahedralMesh.h>
-#include <spg/geom/io/obj.h>
 
 ///////////////////////////////////////////////////////////
 // Simulation object creation methods and types for the GUI
