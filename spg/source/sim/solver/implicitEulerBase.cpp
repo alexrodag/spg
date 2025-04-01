@@ -126,7 +126,7 @@ void ImplicitEulerBase::getSystemForce(VectorX &f) const
                 for (const auto &energy : energies) {
                     const auto nstencils = energy->nStencils();
                     timer.start();
-                    // #pragma omp parallel for
+#pragma omp parallel for
                     for (int i = 0; i < nstencils; ++i) {
                         energy->accumulateForces(i, obj, accumulatedNDOF, f, true);
                     }
