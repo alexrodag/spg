@@ -15,6 +15,7 @@
 #include <spg/sim/simObject/rigidBodyGroup.h>
 #include <spg/sim/energy/springEnergy.h>
 #include <spg/sim/energy/springContinuumEnergy.h>
+#include <spg/sim/energy/springSquaredContinuumEnergy.h>
 #include <spg/sim/energy/springAnchorEnergy.h>
 #include <spg/sim/energy/discreteBendingEnergy.h>
 #include <spg/sim/energy/baraffWitkinBendingEnergy.h>
@@ -27,6 +28,8 @@
 #include <spg/sim/energy/stvkEnergy.h>
 #include <spg/sim/energy/springAnchorRigidBodyEnergy.h>
 #include <spg/sim/energy/springRigidBodyEnergy.h>
+#include <spg/sim/energy/springSquaredRigidBodyEnergy.h>
+#include <spg/sim/energy/rigidBodyOrientationAlignmentEnergy.h>
 #include <spg/sim/solver/xpbd.h>
 #include <spg/sim/solver/simplecticEuler.h>
 #include <spg/sim/solver/bdf2.h>
@@ -47,7 +50,7 @@
 
 enum class MembraneType { Stvk, BaraffWitkin, Choi };
 enum class BendingType { Discrete, Quadratic, BaraffWitkin };
-enum class SpringType { Normal, Continuum };
+enum class SpringType { Normal, Continuum, SquaredContinuum };
 enum class FemType { Stvk, NeoHookean, SquaredNeoHookean };
 
 spg::ParticleGroup createRope(const float mass, const float ropeLength, const int nParticles, SpringType springType)
@@ -67,6 +70,8 @@ spg::ParticleGroup createRope(const float mass, const float ropeLength, const in
     std::shared_ptr<spg::ParticleGroup::EnergyT> springEnergy;
     if (springType == SpringType::Continuum) {
         springEnergy = std::make_shared<spg::SpringContinuumEnergy>();
+    } else if (springType == SpringType::SquaredContinuum) {
+        springEnergy = std::make_shared<spg::SpringSquaredContinuumEnergy>();
     } else {
         springEnergy = std::make_shared<spg::SpringEnergy>();
     }
@@ -86,6 +91,8 @@ spg::ParticleGroup createRope(const float mass, const float ropeLength, const in
     };
     if (springType == SpringType::Continuum) {
         l_addStencils(dynamic_cast<spg::SpringContinuumEnergy *>(springEnergy.get()));
+    } else if (springType == SpringType::SquaredContinuum) {
+        l_addStencils(dynamic_cast<spg::SpringSquaredContinuumEnergy *>(springEnergy.get()));
     } else {
         l_addStencils(dynamic_cast<spg::SpringEnergy *>(springEnergy.get()));
     }
@@ -216,6 +223,8 @@ spg::ParticleGroup createSpringBeam(const float mass,
     std::shared_ptr<spg::ParticleGroup::EnergyT> springEnergy;
     if (springType == SpringType::Continuum) {
         springEnergy = std::make_shared<spg::SpringContinuumEnergy>();
+    } else if (springType == SpringType::SquaredContinuum) {
+        springEnergy = std::make_shared<spg::SpringSquaredContinuumEnergy>();
     } else {
         springEnergy = std::make_shared<spg::SpringEnergy>();
     }
@@ -238,6 +247,8 @@ spg::ParticleGroup createSpringBeam(const float mass,
     };
     if (springType == SpringType::Continuum) {
         l_addStencils(dynamic_cast<spg::SpringContinuumEnergy *>(springEnergy.get()));
+    } else if (springType == SpringType::SquaredContinuum) {
+        l_addStencils(dynamic_cast<spg::SpringSquaredContinuumEnergy *>(springEnergy.get()));
     } else {
         l_addStencils(dynamic_cast<spg::SpringEnergy *>(springEnergy.get()));
     }
@@ -543,6 +554,54 @@ spg::RigidBodyGroup createAnchoredRigidBody(const spg::Real mass,
     return rbGroup;
 }
 
+spg::RigidBodyGroup createArticulatedRigidBody(const spg::Real mass,
+                                               const float width,
+                                               const float height,
+                                               const float depth,
+                                               const int nBodies)
+{
+    spg::RigidBodyGroup rbGroup;
+    auto [vertices, faces] = unitCubeGeometry();
+    spg::Matrix3 transform;
+    transform.setZero();
+    transform(0, 0) = width;
+    transform(1, 1) = height;
+    transform(2, 2) = depth;
+    for (auto &v : vertices) {
+        v = transform * v;
+    }
+    spg::TriangleMesh mesh(vertices, vertices, faces);
+    spg::Matrix3 localInertia;
+    localInertia.setZero();
+    localInertia(0, 0) = 1.0 / 12.0 * mass * (height * height + depth * depth);
+    localInertia(1, 1) = 1.0 / 12.0 * mass * (width * width + depth * depth);
+    localInertia(2, 2) = 1.0 / 12.0 * mass * (width * width + height * height);
+
+    rbGroup.addBody({0, 0, 0}, {0, 0, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
+
+    std::shared_ptr<spg::SpringAnchorRBEnergy> springAnchorEnergy = std::make_shared<spg::SpringAnchorRBEnergy>();
+    springAnchorEnergy->addStencil({0}, {0, height * 0.5, 0}, {0, height * 0.5, 0}, 1e10);
+    springAnchorEnergy->addStencil({0}, {0, -height * 0.5, 0}, {0, -height * 0.5, 0}, 1e10);
+    springAnchorEnergy->addStencil({0}, {-width * 0.5, 0, 0}, {-width * 0.5, 0, 0}, 1e10);
+
+    std::shared_ptr<spg::SpringSquaredRBEnergy> springEnergy = std::make_shared<spg::SpringSquaredRBEnergy>();
+    std::shared_ptr<spg::RBOrientationAlignmentEnergy> alignmentEnergy =
+        std::make_shared<spg::RBOrientationAlignmentEnergy>();
+    for (int i = 1; i < nBodies; ++i) {
+        rbGroup.addBody({width * i, 0, 0}, {width * i, 0, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
+        springEnergy->addStencil(
+            {i - 1, i}, {spg::Vector3{width * 0.5, 0, 0}, spg::Vector3{-width * 0.5, 0, 0}}, 0, 1e10);
+        alignmentEnergy->addStencil({i - 1, i}, 1e5);
+    }
+
+    rbGroup.addEnergy(springAnchorEnergy);
+    if (nBodies > 1) {
+        rbGroup.addEnergy(springEnergy);
+        rbGroup.addEnergy(alignmentEnergy);
+    }
+    return rbGroup;
+}
+
 spg::RigidBodyGroup createRigidBodyChain(const spg::Real mass,
                                          const float width,
                                          const float height,
@@ -594,7 +653,7 @@ spg::RigidBodyGroup createRigidBodyChain(const spg::Real mass,
     return rbGroup;
 }
 
-enum class SceneType { Cloth, Rope, SpringBeam, FemBeam, RBChain, AnchoredRB };
+enum class SceneType { Cloth, Rope, SpringBeam, FemBeam, RBChain, AnchoredRB, ArticulatedRB };
 
 std::vector<spg::ParticleGroup> createSceneObjects(SceneType sceneType,
                                                    MembraneType membraneType,
@@ -643,6 +702,10 @@ std::vector<spg::RigidBodyGroup> createRigidBodySceneObjects(SceneType sceneType
     }
     if (sceneType == SceneType::AnchoredRB) {
         return {createAnchoredRigidBody(mass, width, height, depth)};
+    }
+
+    if (sceneType == SceneType::ArticulatedRB) {
+        return {createArticulatedRigidBody(mass, width, height, depth, 1 * resolutionMultiplier)};
     }
     throw std::runtime_error("Invalid rigid body group scene");
 }
@@ -753,7 +816,8 @@ int main()
         }
 
         // Scene selection stuff
-        const char *sceneTypeNames[] = {"Spring beam", "Cloth", "Rope", "Fem beam", "RB chain", "Anchored RB"};
+        const char *sceneTypeNames[] = {
+            "Spring beam", "Cloth", "Rope", "Fem beam", "RB chain", "Anchored RB", "Articulated RB"};
         std::map<int, SceneType> sceneTypeMap;
         sceneTypeMap[0] = SceneType::SpringBeam;
         sceneTypeMap[1] = SceneType::Cloth;
@@ -761,6 +825,7 @@ int main()
         sceneTypeMap[3] = SceneType::FemBeam;
         sceneTypeMap[4] = SceneType::RBChain;
         sceneTypeMap[5] = SceneType::AnchoredRB;
+        sceneTypeMap[6] = SceneType::ArticulatedRB;
         int sceneId{0};
         SceneType sceneType = sceneTypeMap[sceneId];
 
@@ -774,10 +839,11 @@ int main()
         bendingTypeMap[0] = BendingType::Discrete;
         bendingTypeMap[1] = BendingType::Quadratic;
         bendingTypeMap[2] = BendingType::BaraffWitkin;
-        const char *springTypeNames[] = {"Normal", "Continuum"};
+        const char *springTypeNames[] = {"Normal", "Continuum", "Squared Continuum"};
         std::map<int, SpringType> springTypeMap;
         springTypeMap[0] = SpringType::Normal;
         springTypeMap[1] = SpringType::Continuum;
+        springTypeMap[2] = SpringType::SquaredContinuum;
         const char *femTypeNames[] = {"StVK", "Neo Hookean", "Squared Neo Hookean"};
         std::map<int, FemType> femTypeMap;
         femTypeMap[0] = FemType::Stvk;
@@ -871,6 +937,21 @@ int main()
                                 auto *cn = polyscope::getCurveNetwork("solver" + std::to_string(solverId) + "rbGroup" +
                                                                       std::to_string(i) + "springs");
                                 cn->updateNodePositions(springPositions);
+                            } else if (auto springEnergy = dynamic_cast<spg::SpringSquaredRBEnergy *>(energy.get());
+                                       springEnergy != nullptr) {
+                                std::vector<spg::Vector3> springPositions;
+                                for (int s = 0; s < springEnergy->nStencils(); ++s) {
+                                    auto rbIds = springEnergy->stencils()[s];
+                                    springPositions.push_back(rbGroup.positions()[rbIds[0]] +
+                                                              rbGroup.rotationMatrices()[rbIds[0]] *
+                                                                  (springEnergy->localRBPoints()[s][0]));
+                                    springPositions.push_back(rbGroup.positions()[rbIds[1]] +
+                                                              rbGroup.rotationMatrices()[rbIds[1]] *
+                                                                  (springEnergy->localRBPoints()[s][1]));
+                                }
+                                auto *cn = polyscope::getCurveNetwork("solver" + std::to_string(solverId) + "rbGroup" +
+                                                                      std::to_string(i) + "squaredSprings");
+                                cn->updateNodePositions(springPositions);
                             } else if (auto springAnchorEnergy =
                                            dynamic_cast<spg::SpringAnchorRBEnergy *>(energy.get());
                                        springAnchorEnergy != nullptr) {
@@ -942,6 +1023,10 @@ int main()
                                        dynamic_cast<spg::SpringContinuumEnergy *>(energy.get());
                                    springContinuumEnergy != nullptr) {
                             l_registerCurveNetwork(springContinuumEnergy);
+                        } else if (auto springSquaredContinuumEnergy =
+                                       dynamic_cast<spg::SpringSquaredContinuumEnergy *>(energy.get());
+                                   springSquaredContinuumEnergy != nullptr) {
+                            l_registerCurveNetwork(springSquaredContinuumEnergy);
                         } else if (auto membraneStvkEnergy = dynamic_cast<spg::MembraneStvkEnergy *>(energy.get());
                                    membraneStvkEnergy != nullptr) {
                             l_registerSurfaceMesh(membraneStvkEnergy);
@@ -1013,6 +1098,24 @@ int main()
                             }
                             polyscope::registerCurveNetwork(
                                 "solver" + std::to_string(solverId) + "rbGroup" + std::to_string(i) + "springs",
+                                springPositions,
+                                springIndices);
+                        } else if (auto springEnergy = dynamic_cast<spg::SpringSquaredRBEnergy *>(energy.get());
+                                   springEnergy != nullptr) {
+                            std::vector<spg::Vector3> springPositions;
+                            std::vector<std::array<int, 2>> springIndices;
+                            for (int s = 0; s < springEnergy->nStencils(); ++s) {
+                                auto rbIds = springEnergy->stencils()[s];
+                                springPositions.push_back(rbGroup.positions()[rbIds[0]] +
+                                                          rbGroup.rotationMatrices()[rbIds[0]] *
+                                                              (springEnergy->localRBPoints()[s][0]));
+                                springPositions.push_back(rbGroup.positions()[rbIds[1]] +
+                                                          rbGroup.rotationMatrices()[rbIds[1]] *
+                                                              (springEnergy->localRBPoints()[s][1]));
+                                springIndices.push_back({s * 2, s * 2 + 1});
+                            }
+                            polyscope::registerCurveNetwork(
+                                "solver" + std::to_string(solverId) + "rbGroup" + std::to_string(i) + "squaredSprings",
                                 springPositions,
                                 springIndices);
                         } else if (auto springAnchorEnergy = dynamic_cast<spg::SpringAnchorRBEnergy *>(energy.get());
@@ -1116,7 +1219,8 @@ int main()
                 }
                 solver->setNumSubsteps(solverSubsteps[solverId]);
                 solver->setVerbosity(verbosity);
-                if (sceneType != SceneType::RBChain && sceneType != SceneType::AnchoredRB) {
+                if (sceneType != SceneType::RBChain && sceneType != SceneType::AnchoredRB &&
+                    sceneType != SceneType::ArticulatedRB) {
                     const auto objects = createSceneObjects(
                         sceneType, membraneType, bendingType, springType, femType, simObjectResolutionMultiplier);
                     for (const auto &object : objects) {

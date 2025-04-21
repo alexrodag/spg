@@ -45,7 +45,7 @@ As an example, by providing the following constraint code for the [Discrete Bend
 - [Stable Neo-Hookean](https://graphics.pixar.com/library/StableElasticity/paper.pdf)
 - [StVK](https://en.wikipedia.org/wiki/Hyperelastic_material#Saint_Venant%E2%80%93Kirchhoff_model)
 
-The current implementations are focused on parallel CPU simulation of deformables, including cloth, spring systems and finite element models. Some of the solvers meant for GPU computation may underperform, but this common framework allows to analyse and compare other important aspects such as convergence and stability properties.
+The current implementations are focused on parallel CPU simulation of rigid body and deformable systems, including cloth, spring systems and finite element models. Some of the solvers meant for GPU computation may underperform, but this common framework allows to analyse and compare other important aspects such as convergence and stability properties.
 
 This is still a experimental project, which is the best excuse I can think of to justify the lack of proper documentation and unit testing.
 
@@ -58,7 +58,7 @@ I intend to explore several big features in the future, in no particular order:
 - GPU support
 
 ## Compilation and dependencies
-CMake is used to generate and compile the project. It has been tested in Windows 11 with VSCode and MSVC 19, and in Ubuntu 24.04. You can configure it in your preferred IDE. The `apps/` folder contains demo examples, including a small elastic pendulum simulation with the basics of setting up and simulating a scene, and a solver comparison demo that allows to set up different scenes and simulate them with multiple configurable solvers. 
+CMake is used to generate and compile the project. It has been tested in Windows 11 with VSCode and MSVC 19, and in Ubuntu 24.04. You can configure it in your preferred IDE. The `apps/` folder contains demo examples, including a small elastic pendulum simulation with the basics of setting up and simulating a scene, and a solver comparison demo that allows to set up different scenes and simulate them with multiple configurable solvers. The flags in `apps/CMakeLists.txt` configure which demos to build. 
 
 SPG uses [Eigen](https://eigen.tuxfamily.org/) and [TinyAD](https://github.com/patr-schm/TinyAD) as dependencies. The solver comparison demo also uses [Polyscope](https://polyscope.run/) for GUI and rendering. All of these come as submodules.
 
