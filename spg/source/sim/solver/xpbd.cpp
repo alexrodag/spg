@@ -1,6 +1,5 @@
 #include <spg/sim/solver/xpbd.h>
 #include <spg/sim/energy/energy.h>
-#include <spg/sim/simObject/particleGroup.h>
 #include <spg/sim/simObject/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
 #include <spg/utils/graphColoring.h>

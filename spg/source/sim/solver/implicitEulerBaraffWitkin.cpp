@@ -1,5 +1,4 @@
 #include <spg/sim/solver/implicitEulerBaraffWitkin.h>
-#include <spg/sim/energy/energy.h>
 #include <spg/sim/simObject/particleGroup.h>
 #include <spg/sim/simObject/rigidBodyGroup.h>
 #include <spg/utils/timer.h>
