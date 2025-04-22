@@ -4,6 +4,8 @@ SPG (short for Spring) is a research-focused C++ physics simulation library for 
 
 ![SPG solver comparison example](media/spg-solver-compare.gif)
 
+![SPG rigid body demos](media/spg-rigid-body-demos.gif)
+
 General nonlinear energies $E(x) = f(x)$ are supported. Energies of the particular form $E(x) = \frac{1}{2}C(x)^T K C(x)$, with $C(x)$ a vector of nonlinear constraint functions and $K$ a stiffness matrix, can also be defined by providing just the implementation of $C(x)$ and become automatically compatible with constraint-based solvers (e.g. XPBD) as well as energy-based and force-based solvers.
 
 Through the use of autodiff and templates (using [TinyAD](https://github.com/patr-schm/TinyAD) as autodiff backend), automatic first and second order derivatives are provided from a simple energy or constraint definition. This helps to keep the code to a minimum, very close to the actual formulas of the corresponding solvers and models. It is also possible to override these automatic versions with more efficient custom implementations if needed.
@@ -45,7 +47,7 @@ As an example, by providing the following constraint code for the [Discrete Bend
 - [Stable Neo-Hookean](https://graphics.pixar.com/library/StableElasticity/paper.pdf)
 - [StVK](https://en.wikipedia.org/wiki/Hyperelastic_material#Saint_Venant%E2%80%93Kirchhoff_model)
 
-The current implementations are focused on parallel CPU simulation of rigid body and deformable systems, including cloth, spring systems and finite element models. Some of the solvers meant for GPU computation may underperform, but this common framework allows to analyse and compare other important aspects such as convergence and stability properties.
+The current implementations are focused on parallel CPU simulation of deformable systems, including cloth, spring systems and finite element models, as well as rigid body systems, including spring connections and articulated joints. Some of the solvers meant for GPU computation may underperform, but this common framework allows to analyse and compare other important aspects such as convergence and stability properties.
 
 This is still a experimental project, which is the best excuse I can think of to justify the lack of proper documentation and unit testing.
 

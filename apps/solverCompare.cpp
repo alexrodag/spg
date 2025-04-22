@@ -26,9 +26,9 @@
 #include <spg/sim/energy/stableNeoHookeanEnergy.h>
 #include <spg/sim/energy/stableSquaredNeoHookeanEnergy.h>
 #include <spg/sim/energy/stvkEnergy.h>
-#include <spg/sim/energy/springAnchorRigidBodyEnergy.h>
-#include <spg/sim/energy/springRigidBodyEnergy.h>
-#include <spg/sim/energy/springSquaredRigidBodyEnergy.h>
+#include <spg/sim/energy/rigidBodySpringAnchorEnergy.h>
+#include <spg/sim/energy/rigidBodySpringEnergy.h>
+#include <spg/sim/energy/rigidBodySpringSquaredEnergy.h>
 #include <spg/sim/energy/rigidBodyOrientationAlignmentEnergy.h>
 #include <spg/sim/solver/xpbd.h>
 #include <spg/sim/solver/simplecticEuler.h>
@@ -545,7 +545,7 @@ spg::RigidBodyGroup createAnchoredRigidBody(const spg::Real mass,
 
     rbGroup.addBody({0, 0, 0}, {0, 0, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
 
-    std::shared_ptr<spg::SpringAnchorRBEnergy> springAnchorEnergy = std::make_shared<spg::SpringAnchorRBEnergy>();
+    std::shared_ptr<spg::RBSpringAnchorEnergy> springAnchorEnergy = std::make_shared<spg::RBSpringAnchorEnergy>();
     springAnchorEnergy->addStencil({0}, {0, height * 0.5, 0}, {0, height * 0.5, -1}, 100);
     springAnchorEnergy->addStencil({0}, {width * 0.5, -height * 0.5, 0}, {width, -height * 0.5, 1}, 100);
     springAnchorEnergy->addStencil({0}, {-width * 0.5, -height * 0.5, 0}, {-width, -height * 0.5, 1}, 100);
@@ -579,12 +579,12 @@ spg::RigidBodyGroup createArticulatedRigidBody(const spg::Real mass,
 
     rbGroup.addBody({0, 0, 0}, {0, 0, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
 
-    std::shared_ptr<spg::SpringAnchorRBEnergy> springAnchorEnergy = std::make_shared<spg::SpringAnchorRBEnergy>();
+    std::shared_ptr<spg::RBSpringAnchorEnergy> springAnchorEnergy = std::make_shared<spg::RBSpringAnchorEnergy>();
     springAnchorEnergy->addStencil({0}, {0, height * 0.5, 0}, {0, height * 0.5, 0}, 1e10);
     springAnchorEnergy->addStencil({0}, {0, -height * 0.5, 0}, {0, -height * 0.5, 0}, 1e10);
     springAnchorEnergy->addStencil({0}, {-width * 0.5, 0, 0}, {-width * 0.5, 0, 0}, 1e10);
 
-    std::shared_ptr<spg::SpringSquaredRBEnergy> springEnergy = std::make_shared<spg::SpringSquaredRBEnergy>();
+    std::shared_ptr<spg::RBSpringSquaredEnergy> springEnergy = std::make_shared<spg::RBSpringSquaredEnergy>();
     std::shared_ptr<spg::RBOrientationAlignmentEnergy> alignmentEnergy =
         std::make_shared<spg::RBOrientationAlignmentEnergy>();
     for (int i = 1; i < nBodies; ++i) {
@@ -627,10 +627,10 @@ spg::RigidBodyGroup createRigidBodyChain(const spg::Real mass,
 
     rbGroup.addBody({0, 0, 0}, {0, 0, 0}, mass, {0, 0, 0}, {0, 0, 0}, localInertia, mesh);
 
-    std::shared_ptr<spg::SpringAnchorRBEnergy> springAnchorEnergy = std::make_shared<spg::SpringAnchorRBEnergy>();
+    std::shared_ptr<spg::RBSpringAnchorEnergy> springAnchorEnergy = std::make_shared<spg::RBSpringAnchorEnergy>();
     springAnchorEnergy->addStencil({0}, {width * 0.5, height * 0.5, 0}, {width * 0.5, height * 0.5, 0}, 100);
 
-    std::shared_ptr<spg::SpringRBEnergy> springEnergy = std::make_shared<spg::SpringRBEnergy>();
+    std::shared_ptr<spg::RBSpringEnergy> springEnergy = std::make_shared<spg::RBSpringEnergy>();
     for (int i = 1; i < nBodies; ++i) {
         rbGroup.addBody({-(height + 1) * i, 0, -(height + 1) * i},
                         {-(height + 1) * i, 0, -(height + 1) * i},
@@ -725,11 +725,11 @@ std::shared_ptr<spg::SpringAnchorEnergy> addPickingEnergy(spg::ParticleGroup &pG
     return springAnchorEnergy;
 }
 
-std::shared_ptr<spg::SpringAnchorRBEnergy> addPickingEnergy(spg::RigidBodyGroup &rbGroup,
+std::shared_ptr<spg::RBSpringAnchorEnergy> addPickingEnergy(spg::RigidBodyGroup &rbGroup,
                                                             int bodyId,
                                                             const spg::Vector3 &pos)
 {
-    auto springAnchorRBEnergy = std::make_shared<spg::SpringAnchorRBEnergy>();
+    auto springAnchorRBEnergy = std::make_shared<spg::RBSpringAnchorEnergy>();
     springAnchorRBEnergy->setName("picking");
     spg::Real pickingStiffness = 100;
     springAnchorRBEnergy->addStencil(
@@ -787,7 +787,7 @@ int main()
         int currentPickedParticleId = -1;
         std::unordered_map<const polyscope::Structure *, std::pair<spg::RigidBodyGroup *, int>>
             polyscopeToRigidBodyGroupAndBody;
-        std::shared_ptr<spg::SpringAnchorRBEnergy> currentRigidBodyPickingEnergy;
+        std::shared_ptr<spg::RBSpringAnchorEnergy> currentRigidBodyPickingEnergy;
         spg::RigidBodyGroup *currentPickedRigidBodyGroup = nullptr;
 
         float currentPickedDepth = -1;
@@ -922,7 +922,7 @@ int main()
                             sm->setTransform(mat);
                         }
                         for (auto energy : rbGroup.energies()) {
-                            if (auto springEnergy = dynamic_cast<spg::SpringRBEnergy *>(energy.get());
+                            if (auto springEnergy = dynamic_cast<spg::RBSpringEnergy *>(energy.get());
                                 springEnergy != nullptr) {
                                 std::vector<spg::Vector3> springPositions;
                                 for (int s = 0; s < springEnergy->nStencils(); ++s) {
@@ -937,7 +937,7 @@ int main()
                                 auto *cn = polyscope::getCurveNetwork("solver" + std::to_string(solverId) + "rbGroup" +
                                                                       std::to_string(i) + "springs");
                                 cn->updateNodePositions(springPositions);
-                            } else if (auto springEnergy = dynamic_cast<spg::SpringSquaredRBEnergy *>(energy.get());
+                            } else if (auto springEnergy = dynamic_cast<spg::RBSpringSquaredEnergy *>(energy.get());
                                        springEnergy != nullptr) {
                                 std::vector<spg::Vector3> springPositions;
                                 for (int s = 0; s < springEnergy->nStencils(); ++s) {
@@ -953,7 +953,7 @@ int main()
                                                                       std::to_string(i) + "squaredSprings");
                                 cn->updateNodePositions(springPositions);
                             } else if (auto springAnchorEnergy =
-                                           dynamic_cast<spg::SpringAnchorRBEnergy *>(energy.get());
+                                           dynamic_cast<spg::RBSpringAnchorEnergy *>(energy.get());
                                        springAnchorEnergy != nullptr) {
                                 std::vector<spg::Vector3> springPositions;
                                 for (int s = 0; s < springAnchorEnergy->nStencils(); ++s) {
@@ -1082,7 +1082,7 @@ int main()
                         sm->setTransform(mat);
                     }
                     for (auto energy : rbGroup.energies()) {
-                        if (auto springEnergy = dynamic_cast<spg::SpringRBEnergy *>(energy.get());
+                        if (auto springEnergy = dynamic_cast<spg::RBSpringEnergy *>(energy.get());
                             springEnergy != nullptr) {
                             std::vector<spg::Vector3> springPositions;
                             std::vector<std::array<int, 2>> springIndices;
@@ -1100,7 +1100,7 @@ int main()
                                 "solver" + std::to_string(solverId) + "rbGroup" + std::to_string(i) + "springs",
                                 springPositions,
                                 springIndices);
-                        } else if (auto springEnergy = dynamic_cast<spg::SpringSquaredRBEnergy *>(energy.get());
+                        } else if (auto springEnergy = dynamic_cast<spg::RBSpringSquaredEnergy *>(energy.get());
                                    springEnergy != nullptr) {
                             std::vector<spg::Vector3> springPositions;
                             std::vector<std::array<int, 2>> springIndices;
@@ -1118,7 +1118,7 @@ int main()
                                 "solver" + std::to_string(solverId) + "rbGroup" + std::to_string(i) + "squaredSprings",
                                 springPositions,
                                 springIndices);
-                        } else if (auto springAnchorEnergy = dynamic_cast<spg::SpringAnchorRBEnergy *>(energy.get());
+                        } else if (auto springAnchorEnergy = dynamic_cast<spg::RBSpringAnchorEnergy *>(energy.get());
                                    springAnchorEnergy != nullptr) {
                             std::vector<spg::Vector3> springPositions;
                             std::vector<std::array<int, 2>> springIndices;
@@ -1157,7 +1157,7 @@ int main()
                         polyscope::removeCurveNetwork("solver" + std::to_string(solverId) + "rbGroup" +
                                                       std::to_string(j) + "springs");
                         for (auto energy : rbGroup.energies()) {
-                            if (auto springAnchorEnergy = dynamic_cast<spg::SpringAnchorRBEnergy *>(energy.get());
+                            if (auto springAnchorEnergy = dynamic_cast<spg::RBSpringAnchorEnergy *>(energy.get());
                                 springAnchorEnergy != nullptr) {
                                 polyscope::removeCurveNetwork("solver" + std::to_string(solverId) + "rbGroup" +
                                                               std::to_string(j) + "anchor-springs-" +
