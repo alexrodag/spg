@@ -100,8 +100,8 @@ void VBD::step()
                             [this, &obj, &elementsPerVertex, accumulatedNDOF, invdt, invdtSquared, epsilon, iter](
                                 const int vIdx) {
                                 const auto mOverdtSquared = obj.masses()[vIdx] * invdtSquared;
-                                Vector<obj.s_nDOFs> f;
-                                Matrix<obj.s_nDOFs, obj.s_nDOFs> H;
+                                Vector<std::decay_t<decltype(obj)>::s_nDOFs> f;
+                                Matrix<std::decay_t<decltype(obj)>::s_nDOFs, std::decay_t<decltype(obj)>::s_nDOFs> H;
                                 f.setZero();
                                 H.setZero();
                                 if (iter != 0 || m_initialGuessType == InitialGuessType::InertialWithAcceleration) {
