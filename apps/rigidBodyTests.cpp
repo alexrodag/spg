@@ -200,7 +200,30 @@ struct RigidBody {
         Q = Eigen::Quaternion<spg::Real>(Eigen::AngleAxis<spg::Real>(vNorm, orientation / vNorm));
     }
 };
-
+std::tuple<std::vector<spg::Vector3>, std::vector<spg::Int3>> unitCubeGeometry()
+{
+    std::vector<spg::Vector3> vertices{{-0.5, -0.5, -0.5},
+                                       {0.5, -0.5, -0.5},
+                                       {-0.5, 0.5, -0.5},
+                                       {0.5, 0.5, -0.5},
+                                       {-0.5, -0.5, 0.5},
+                                       {0.5, -0.5, 0.5},
+                                       {-0.5, 0.5, 0.5},
+                                       {0.5, 0.5, 0.5}};
+    std::vector<spg::Int3> faces{{0, 2, 3},
+                                 {0, 3, 1},
+                                 {0, 4, 6},
+                                 {0, 6, 2},
+                                 {0, 1, 5},
+                                 {0, 5, 4},
+                                 {7, 6, 4},
+                                 {7, 4, 5},
+                                 {7, 3, 2},
+                                 {7, 2, 6},
+                                 {7, 5, 1},
+                                 {7, 1, 3}};
+    return {vertices, faces};
+}
 int main()
 {
     try {
@@ -224,7 +247,7 @@ int main()
         float dt{0.01f};
         int substeps{1};
 
-        auto [vertices, faces] = spg::io::loadObj("./unit-cube.obj");
+        auto [vertices, faces] = unitCubeGeometry();
         spg::Real width{1}, height{3}, depth{0.2}, mass{1};
         spg::Matrix3 transform;
         transform.setZero();
@@ -248,9 +271,9 @@ int main()
         rbs.front().pos = {0, 0, 0};
         rbs.front().vel = {0, 0, 0};
         rbs.front().orientation = {0, 0, 0.001};
-        // rbs.front().orientation = {0.2, 0.3, 0.401};
+        rbs.front().orientation = {0.2, 0.3, 0.401};
         rbs.front().omega = {1, 0.000001, 0.000001};
-        // rbs.front().omega = {1, 0.7, 0.3};
+        rbs.front().omega = {1, 0.7, 0.3};
         /* rbs.front().omega = {0.000001, 1, 0.000001}; */
         /* rbs.front().omega = {0.000001, 0.000001, 1}; */
         /* rbs.front().omega = {0, 0, 0}; */
