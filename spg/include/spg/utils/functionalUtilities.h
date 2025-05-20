@@ -6,6 +6,8 @@ namespace spg
 template <typename Func, typename Tuple>
 void apply_each(Func &&function, Tuple &&tuple)
 {
-    std::apply([&function](auto &&...args) { (function(args), ...); }, std::forward<Tuple>(tuple));
+    std::apply(
+        [&func = std::forward<Func>(function)](auto &&...args) { (func(std::forward<decltype(args)>(args)), ...); },
+        std::forward<Tuple>(tuple));
 }
 }  // namespace spg
