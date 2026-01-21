@@ -53,6 +53,10 @@ enum class BendingType { Discrete, Quadratic, BaraffWitkin };
 enum class SpringType { Normal, Continuum, SquaredContinuum };
 enum class FemType { Stvk, NeoHookean, SquaredNeoHookean };
 
+std::shared_ptr<spg::SpringAnchorEnergy> wallEnergy;
+spg::Real t = 0;
+std::shared_ptr<spg::TetrahedralMesh> tetMeshh;
+
 spg::ParticleGroup createRope(const float mass, const float ropeLength, const int nParticles, SpringType springType)
 {
     spg::ParticleGroup pGroup;
@@ -88,6 +92,55 @@ spg::ParticleGroup createRope(const float mass, const float ropeLength, const in
         for (int i = 1; i < nParticles; i += 1) {
             energy->addStencil(std::array<int, 2>{i - 1, i}, ropeLength / (nParticles - 1), springStiffness);
         }
+    };
+    if (springType == SpringType::Continuum) {
+        l_addStencils(dynamic_cast<spg::SpringContinuumEnergy *>(springEnergy.get()));
+    } else if (springType == SpringType::SquaredContinuum) {
+        l_addStencils(dynamic_cast<spg::SpringSquaredContinuumEnergy *>(springEnergy.get()));
+    } else {
+        l_addStencils(dynamic_cast<spg::SpringEnergy *>(springEnergy.get()));
+    }
+    pGroup.addEnergy(springAnchorEnergy);
+    pGroup.addEnergy(springEnergy);
+    return pGroup;
+}
+
+spg::ParticleGroup createRope2(const float mass, const float ropeLength, const int nParticles, SpringType springType)
+{
+    spg::ParticleGroup pGroup;
+    pGroup.addParticle({4.000001, 2, 0}, {4.000001, 2, 0}, 1);
+    pGroup.addParticle({4, 1, 0}, {4, 1, 0}, 1);
+    pGroup.addParticle({4, 0, 0}, {4, 0, 0}, 1);
+
+    /* pGroup.addParticle({0, 0, 0}, {0, 0, 0}, 0.00001);
+    pGroup.addParticle({1, 0, 0}, {1, 0, 0}, 0.00001);
+    pGroup.addParticle({2, 0, 0}, {2, 0, 0}, 1); */
+
+    auto springAnchorEnergy = std::make_shared<spg::SpringAnchorEnergy>();
+
+    std::shared_ptr<spg::ParticleGroup::EnergyT> springEnergy;
+    if (springType == SpringType::Continuum) {
+        springEnergy = std::make_shared<spg::SpringContinuumEnergy>();
+    } else if (springType == SpringType::SquaredContinuum) {
+        springEnergy = std::make_shared<spg::SpringSquaredContinuumEnergy>();
+    } else {
+        springEnergy = std::make_shared<spg::SpringEnergy>();
+    }
+    const spg::Real springAnchorStiffness = 1e10;
+    const spg::Real springStiffness = 1e4;
+    int anchorParticleIdx = 0;
+    springAnchorEnergy->addStencil(
+        std::array<int, 1>{anchorParticleIdx}, pGroup.positions0()[anchorParticleIdx], springAnchorStiffness);
+    /* anchorParticleIdx = 3;
+    springAnchorEnergy->addStencil(
+        std::array<int, 1>{anchorParticleIdx}, pGroup.positions0()[anchorParticleIdx], springAnchorStiffness); */
+
+    auto l_addStencils = [nParticles, springStiffness](auto *energy) {
+        energy->addStencil(std::array<int, 2>{0, 1}, 1.0, springStiffness);
+        energy->addStencil(std::array<int, 2>{1, 2}, 1.0, springStiffness * 10000);
+
+        /* energy->addStencil(std::array<int, 2>{3, 4}, 1.0, springStiffness);
+        energy->addStencil(std::array<int, 2>{4, 5}, 1.0, springStiffness); */
     };
     if (springType == SpringType::Continuum) {
         l_addStencils(dynamic_cast<spg::SpringContinuumEnergy *>(springEnergy.get()));
@@ -238,6 +291,7 @@ spg::ParticleGroup createSpringBeam(const float mass,
             springAnchorEnergy->addStencil(std::array<int, 1>{id}, pGroup.positions0()[id], springStiffness * 1e3);
         }
     }
+
     auto l_addStencils = [&edges, springStiffness, &pGroup](auto *springEnergy) {
         for (const auto &[id0, id1] : edges) {
             springEnergy->addStencil(std::array<int, 2>{id0, id1},
@@ -270,6 +324,8 @@ spg::ParticleGroup createTetrahedralBeam(const float mass,
 {
     spg::ParticleGroup pGroup;
     spg::TetrahedralMesh tetMesh = buildTetrahedralBeamMesh(sideX, sideY, sideZ, nVertexX, nVertexY, nVertexZ);
+    tetMeshh = std::make_shared<spg::TetrahedralMesh>(
+        buildTetrahedralBeamMesh(sideX, sideY, sideZ, nVertexX, nVertexY, nVertexZ));
     const auto &vertices = tetMesh.vertices();
     const auto &vertices0 = tetMesh.vertices0();
     const auto &tets = tetMesh.tets();
@@ -308,7 +364,15 @@ spg::ParticleGroup createTetrahedralBeam(const float mass,
     for (int j = 0; j < nVertexY; ++j) {
         for (int k = 0; k < nVertexZ; ++k) {
             const int id = 0 * nVertexY * nVertexZ + (j + 0) * nVertexZ + k + 0;
-            springAnchorEnergy->addStencil(std::array<int, 1>{id}, pGroup.positions0()[id], springStiffness);
+            springAnchorEnergy->addStencil(std::array<int, 1>{id}, pGroup.positions0()[id], springStiffness * 1e3);
+        }
+    }
+    wallEnergy = std::make_shared<spg::SpringAnchorEnergy>();
+    t = 0;
+    for (int j = 0; j < nVertexY; ++j) {
+        for (int k = 0; k < nVertexZ; ++k) {
+            const int id = (nVertexX - 1) * nVertexY * nVertexZ + (j + 0) * nVertexZ + k + 0;
+            wallEnergy->addStencil(std::array<int, 1>{id}, pGroup.positions0()[id], springStiffness * 1e3);
         }
     }
     auto l_addStencils = [&tets, young, poisson, &pGroup](auto *tetEnergy) {
@@ -325,6 +389,7 @@ spg::ParticleGroup createTetrahedralBeam(const float mass,
     }
     pGroup.addEnergy(springAnchorEnergy);
     pGroup.addEnergy(tetEnergy);
+    pGroup.addEnergy(wallEnergy);
     tetEnergy->preparePrecomputations(pGroup);
     return pGroup;
 }
@@ -404,7 +469,7 @@ spg::ParticleGroup createCloth(const float mass,
     int anchorParticleIdx = 0;
     springAnchorEnergy->addStencil(
         std::array<int, 1>{anchorParticleIdx}, pGroup.positions()[anchorParticleIdx], anchorSpringStiffness);
-    anchorParticleIdx = nvertexRows - 1;
+    anchorParticleIdx = nvertexCols - 1;
     springAnchorEnergy->addStencil(
         std::array<int, 1>{anchorParticleIdx}, pGroup.positions()[anchorParticleIdx], anchorSpringStiffness);
 
@@ -664,10 +729,11 @@ std::vector<spg::ParticleGroup> createSceneObjects(SceneType sceneType,
 {
     float mass = 1.0f;
     if (sceneType == SceneType::Cloth) {
-        return {createCloth(mass, 1, 1, 3 * resolutionMultiplier, 3 * resolutionMultiplier, membraneType, bendingType)};
+        return {createCloth(
+            mass, 1, 5 * 1, 5 * 3 * resolutionMultiplier, 3 * resolutionMultiplier, membraneType, bendingType)};
     }
     if (sceneType == SceneType::Rope) {
-        return {createRope(mass, 3, 3 * resolutionMultiplier, springType)};
+        return {createRope2(mass, 3, 3 * resolutionMultiplier, springType)};
     }
     if (sceneType == SceneType::SpringBeam) {
         return {createSpringBeam(mass,
@@ -682,13 +748,13 @@ std::vector<spg::ParticleGroup> createSceneObjects(SceneType sceneType,
     if (sceneType == SceneType::FemBeam) {
         return {createTetrahedralBeam(mass,
                                       4,
-                                      1,
-                                      1,
+                                      4,
+                                      4,
                                       1 + 4 * resolutionMultiplier,
-                                      1 + resolutionMultiplier,
-                                      1 + resolutionMultiplier,
+                                      1 + 4 * resolutionMultiplier,
+                                      1 + 4 * resolutionMultiplier,
                                       1e3F,
-                                      0.2F,
+                                      0.49F,
                                       femType)};
     }
     throw std::runtime_error("Invalid particle group scene");
@@ -1407,12 +1473,39 @@ int main()
                     l_updateView();
                 }
             }
+            spg::Real totalVolume = 0;
             if (run) {
+                for (auto &anchor : wallEnergy->m_anchor) {
+                    anchor.x() += 2 * (std::sin(t * 10) - std::sin((t - dt) * 10));
+                }
+                t += dt;
                 for (auto &solver : solvers) {
                     solver->step();
                 }
+                tetMeshh->m_vertices = solvers.front()->particleGroups().front().positions();
+                for (const auto &tet : tetMeshh->tets()) {
+                    const spg::Vector3 x0{tetMeshh->vertices()[tet[0]][0],
+                                          tetMeshh->vertices()[tet[0]][1],
+                                          tetMeshh->vertices()[tet[0]][2]};
+                    const spg::Vector3 x1{tetMeshh->vertices()[tet[1]][0],
+                                          tetMeshh->vertices()[tet[1]][1],
+                                          tetMeshh->vertices()[tet[1]][2]};
+                    const spg::Vector3 x2{tetMeshh->vertices()[tet[2]][0],
+                                          tetMeshh->vertices()[tet[2]][1],
+                                          tetMeshh->vertices()[tet[2]][2]};
+                    const spg::Vector3 x3{tetMeshh->vertices()[tet[3]][0],
+                                          tetMeshh->vertices()[tet[3]][1],
+                                          tetMeshh->vertices()[tet[3]][2]};
+                    const auto tetVolume = tetrahedralVolume(tetMeshh->vertices()[tet[0]],
+                                                             tetMeshh->vertices()[tet[1]],
+                                                             tetMeshh->vertices()[tet[2]],
+                                                             tetMeshh->vertices()[tet[3]]);
+                    totalVolume += tetVolume;
+                }
+                std::cout << "V = " << totalVolume << "\n";
                 l_updateView();
             }
+            ImGui::Text((std::string("V ") + std::to_string(totalVolume).c_str()).c_str());
 
             if (ImGui::Button("Center camera")) {
                 polyscope::view::resetCameraToHomeView();
@@ -1441,6 +1534,7 @@ int main()
                 for (auto &solver : solvers) {
                     solver->reset();
                 }
+                t = 0;
                 l_updateView();
             }
 

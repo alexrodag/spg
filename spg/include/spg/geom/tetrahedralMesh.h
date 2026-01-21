@@ -49,9 +49,9 @@ public:
     const std::vector<Vector3> &vertices0() const { return m_vertices0; }
     const std::vector<Int4> &tets() const { return m_tets; }
     const std::vector<Int2> &edges() const { return m_edges; }
+    std::vector<Vector3> m_vertices;
 
 protected:
-    std::vector<Vector3> m_vertices;
     std::vector<Vector3> m_vertices0;
     std::vector<Int4> m_tets;
     std::vector<Int2> m_edges;
