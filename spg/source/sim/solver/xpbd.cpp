@@ -118,6 +118,24 @@ void XPBD::step()
                 }
             },
             m_objects);
+
+        // Particle-wise damping
+        apply_each(
+            [this, &accumulatedNDOF, dt](auto &objs) {
+                for (auto &obj : objs) {
+                    if constexpr (std::is_same_v<std::decay_t<decltype(obj)>, ParticleGroup>) {
+                        obj.updateVelocityRunningAverages();
+                        for (int i = 0; i < obj.size(); ++i) {
+                            auto &v = obj.velocities()[i];
+                            const auto &vra = obj.velocitiyRunningAverages()[i];
+                            if (v != Vector3::Zero() && vra != Vector3::Zero())
+                                v *= std::clamp(v.norm() / vra.norm(), std::pow(0.95, dt / 0.01), 1.0);
+                        }
+                    }
+                }
+            },
+            m_objects);
+
         detailTimer.stop();
         updateTime += detailTimer.getMilliseconds();
     }

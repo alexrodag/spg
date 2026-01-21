@@ -22,6 +22,7 @@ public:
     const std::vector<Vector3> &positions0() const { return m_x0; }
     std::vector<Vector3> &velocities() { return m_v; }
     const std::vector<Vector3> &velocities() const { return m_v; }
+    const std::vector<Vector3> &velocitiyRunningAverages() const { return m_vRunningAverage; }
     void getPositions(VectorX &pos, int offsetIndex) const;
     void getVelocities(VectorX &vel, int offsetIndex) const;
     void setPositions(const VectorX &pos, int offsetIndex);
@@ -30,6 +31,7 @@ public:
     void updatePositionsFromDx(const VectorX &dx, int offsetIndex);
     void integrateVelocities(Real dt);
     void computeIntegratedVelocities(const VectorX &oldPos, int offsetIndex, Real invdt);
+    void updateVelocityRunningAverages();
     const std::vector<Real> &invMasses() const { return m_w; }
     const std::vector<Real> &masses() const { return m_m; }
     std::vector<std::shared_ptr<EnergyT>> &energies() { return m_energies; }
@@ -52,6 +54,7 @@ protected:
     std::vector<Vector3> m_xInitial;
     std::vector<Vector3> m_x0;
     std::vector<Vector3> m_v;
+    std::vector<Vector3> m_vRunningAverage;
     std::vector<Real> m_m;
     std::vector<Real> m_w;
 

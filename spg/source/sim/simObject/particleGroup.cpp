@@ -71,12 +71,22 @@ void ParticleGroup::computeIntegratedVelocities(const VectorX &oldPos, int offse
     }
 }
 
+void ParticleGroup::updateVelocityRunningAverages()
+{
+    const int nparticles = size();
+    const Real alpha = 0.5;
+    for (int particleIdx = 0; particleIdx < nparticles; ++particleIdx) {
+        m_vRunningAverage[particleIdx] = m_v[particleIdx] * alpha + m_vRunningAverage[particleIdx] * (1 - alpha);
+    }
+}
+
 void ParticleGroup::addParticle(const Vector3 &p, const Vector3 &p0, const Real mass)
 {
     m_x.push_back(p);
     m_xInitial.push_back(p);
     m_x0.push_back(p0);
     m_v.push_back(Vector3::Zero());
+    m_vRunningAverage.push_back(Vector3::Zero());
     m_m.push_back(mass);
     m_w.push_back(mass == 0 ? 0 : 1 / mass);
 }
