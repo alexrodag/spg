@@ -23,7 +23,7 @@ if(BUILD_ELASTICPENDULUM)
 endif()
 
 if(ADD_POLYSCOPE)
-    add_subdirectory(../external/polyscope/ ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/polyscope)
+    add_subdirectory(../external/polyscope/ ${CMAKE_BINARY_DIR}/polyscope)
     # TODO: Check how to avoid showing the compile warnings from polyscope
 endif()
 
